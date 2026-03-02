@@ -7,10 +7,10 @@ const statusConfig: Record<
   RalphStatus,
   { color: string; label: string; animate: boolean }
 > = {
-  idle: { color: "bg-zinc-500", label: "Idle", animate: false },
-  running: { color: "bg-green-500", label: "Running", animate: true },
-  completed: { color: "bg-blue-500", label: "Completed", animate: false },
-  error: { color: "bg-red-500", label: "Error", animate: false },
+  idle: { color: "bg-zinc-500", label: "空闲", animate: false },
+  running: { color: "bg-cyan-500", label: "运行中", animate: true },
+  completed: { color: "bg-blue-500", label: "已完成", animate: false },
+  error: { color: "bg-red-500", label: "错误", animate: false },
 };
 
 export function RalphStatusIndicator() {

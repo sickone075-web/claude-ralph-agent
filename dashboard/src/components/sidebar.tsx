@@ -19,11 +19,11 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { RalphStatusIndicator } from "./ralph-status-indicator";
 
 const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/stories", label: "Stories", icon: BookOpen },
-  { href: "/terminal", label: "Terminal", icon: Terminal },
-  { href: "/logs", label: "Logs", icon: ScrollText },
-  { href: "/archives", label: "Archives", icon: Archive },
+  { href: "/dashboard", label: "仪表盘", icon: LayoutDashboard },
+  { href: "/stories", label: "用户故事", icon: BookOpen },
+  { href: "/terminal", label: "终端", icon: Terminal },
+  { href: "/logs", label: "日志", icon: ScrollText },
+  { href: "/archives", label: "归档", icon: Archive },
 ];
 
 function NavContent() {
@@ -33,8 +33,8 @@ function NavContent() {
     <div className="flex h-full flex-col">
       {/* Logo + project name */}
       <div className="px-4 py-5">
-        <h1 className="text-lg font-bold tracking-tight text-white">Ralph</h1>
-        <p className="text-xs text-zinc-400 mt-0.5">Project Dashboard</p>
+        <h1 className="text-lg font-bold tracking-tight bg-gradient-to-r from-cyan-500 to-blue-500 bg-clip-text text-transparent">Ralph</h1>
+        <p className="text-xs text-zinc-400 mt-0.5">项目控制台</p>
       </div>
 
       {/* Navigation */}
@@ -45,12 +45,15 @@ function NavContent() {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+              className={`relative flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors duration-200 ${
                 isActive
-                  ? "bg-zinc-800 text-white"
+                  ? "bg-zinc-800/50 text-white"
                   : "text-zinc-400 hover:bg-zinc-800/50 hover:text-white"
               }`}
             >
+              {isActive && (
+                <span className="absolute left-0 top-1 bottom-1 w-0.5 rounded-full bg-gradient-to-b from-cyan-500 to-blue-500" />
+              )}
               <item.icon className="h-4 w-4" />
               {item.label}
             </Link>
@@ -61,19 +64,22 @@ function NavContent() {
 
         <Link
           href="/settings"
-          className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+          className={`relative flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors duration-200 ${
             pathname === "/settings"
-              ? "bg-zinc-800 text-white"
+              ? "bg-zinc-800/50 text-white"
               : "text-zinc-400 hover:bg-zinc-800/50 hover:text-white"
           }`}
         >
+          {pathname === "/settings" && (
+            <span className="absolute left-0 top-1 bottom-1 w-0.5 rounded-full bg-gradient-to-b from-cyan-500 to-blue-500" />
+          )}
           <Settings className="h-4 w-4" />
-          Settings
+          设置
         </Link>
       </nav>
 
       {/* Status indicator at bottom */}
-      <div className="px-4 py-4 border-t border-zinc-800">
+      <div className="px-4 py-4 border-t border-transparent" style={{ borderImage: 'linear-gradient(to right, #06B6D4, transparent) 1' }}>
         <RalphStatusIndicator />
       </div>
     </div>
@@ -104,7 +110,7 @@ export function Sidebar() {
             </div>
           </SheetContent>
         </Sheet>
-        <h1 className="ml-3 text-sm font-bold text-white">Ralph</h1>
+        <h1 className="ml-3 text-sm font-bold bg-gradient-to-r from-cyan-500 to-blue-500 bg-clip-text text-transparent">Ralph</h1>
       </div>
     </>
   );
