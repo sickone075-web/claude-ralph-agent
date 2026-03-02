@@ -85,40 +85,40 @@ export function StoryEditDialog({
             >
               {story.id}
             </Badge>
-            <span className="text-zinc-200">Edit Story</span>
+            <span className="bg-gradient-to-r from-cyan-500 to-blue-500 bg-clip-text text-transparent">编辑故事</span>
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 mt-2">
           <div>
-            <Label className="text-zinc-400">Title</Label>
+            <Label className="text-zinc-400">标题</Label>
             <Input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="mt-1 bg-zinc-900 border-zinc-800 text-zinc-200"
+              className="mt-1 bg-zinc-900 border-zinc-800 text-zinc-200 focus:ring-cyan-500/30 focus:border-cyan-500/50"
             />
           </div>
 
           <div>
-            <Label className="text-zinc-400">Description</Label>
+            <Label className="text-zinc-400">描述</Label>
             <Textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
-              className="mt-1 bg-zinc-900 border-zinc-800 text-zinc-200"
+              className="mt-1 bg-zinc-900 border-zinc-800 text-zinc-200 focus:ring-cyan-500/30 focus:border-cyan-500/50"
             />
           </div>
 
           <div>
             <div className="flex items-center justify-between">
-              <Label className="text-zinc-400">Acceptance Criteria</Label>
+              <Label className="text-zinc-400">验收标准</Label>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={addCriterion}
-                className="text-zinc-400 hover:text-zinc-200"
+                className="text-zinc-400 hover:text-cyan-400 transition-colors duration-200"
               >
-                <Plus className="h-3 w-3 mr-1" /> Add
+                <Plus className="h-3 w-3 mr-1" /> 添加
               </Button>
             </div>
             <div className="mt-1 space-y-2">
@@ -127,8 +127,8 @@ export function StoryEditDialog({
                   <Input
                     value={c}
                     onChange={(e) => updateCriterion(i, e.target.value)}
-                    className="bg-zinc-900 border-zinc-800 text-zinc-200 text-sm"
-                    placeholder={`Criterion ${i + 1}`}
+                    className="bg-zinc-900 border-zinc-800 text-zinc-200 text-sm focus:ring-cyan-500/30 focus:border-cyan-500/50"
+                    placeholder={`条件 ${i + 1}`}
                   />
                   <Button
                     variant="ghost"
@@ -144,12 +144,12 @@ export function StoryEditDialog({
           </div>
 
           <div>
-            <Label className="text-zinc-400">Notes</Label>
+            <Label className="text-zinc-400">备注</Label>
             <Textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={2}
-              className="mt-1 bg-zinc-900 border-zinc-800 text-zinc-200"
+              className="mt-1 bg-zinc-900 border-zinc-800 text-zinc-200 focus:ring-cyan-500/30 focus:border-cyan-500/50"
             />
           </div>
 
@@ -160,7 +160,7 @@ export function StoryEditDialog({
               ) : (
                 <Circle className="h-4 w-4 text-zinc-600" />
               )}
-              Passes
+              通过状态
             </Label>
             <Switch checked={passes} onCheckedChange={setPasses} />
           </div>
@@ -171,9 +171,9 @@ export function StoryEditDialog({
               onClick={() => onOpenChange(false)}
               className="border-zinc-800 text-zinc-400"
             >
-              Cancel
+              取消
             </Button>
-            <Button onClick={handleSave}>Save Changes</Button>
+            <Button onClick={handleSave} className="bg-gradient-to-r from-cyan-600 to-blue-600 text-white hover:from-cyan-500 hover:to-blue-500 transition-all duration-200">保存修改</Button>
           </div>
         </div>
       </DialogContent>
