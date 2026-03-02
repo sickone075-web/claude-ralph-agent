@@ -66,3 +66,53 @@ Started: 2026-03-02
   - Moving project info + status badge into the Bento grid hero card creates a cleaner page header
   - `card-glow` class from globals.css works on any Card component via className prop
 ---
+
+## 2026-03-02 - US-004
+- Added skeleton loading state to dashboard page when prd is null
+- Bento Grid skeleton mirrors actual layout: col-span-2 row-span-2 project info skeleton + 4 small stat card skeletons
+- Kanban skeleton shows 3 columns with 2-3 skeleton cards each
+- Uses SkeletonCard component from US-001 + inline skeleton placeholders for text
+- Files changed:
+  - dashboard/src/app/(dashboard)/dashboard/page.tsx (added early return skeleton UI when prd is null)
+- **Learnings for future iterations:**
+  - SkeletonCard works well for rectangular placeholders; for custom shapes (circles, text bars) use inline divs with `bg-zinc-700/50 rounded animate-pulse`
+  - Early return pattern `if (!prd) return <skeleton>` is clean for loading states
+  - Match skeleton dimensions to actual content for smooth transition when data loads
+---
+
+## 2026-03-02 - US-005
+- Implemented user stories page visual optimization
+- Added story count Badge with brand gradient next to page title
+- Updated priority tags to use gradient backgrounds (high=red, mid=amber, low=zinc)
+- Added card-glow class to all story cards for hover glow effect
+- Changed drag shadow to brand cyan ring (ring-cyan-500/20)
+- Added transition-all duration-200 to pass/fail status icons
+- Enhanced empty state with large BookOpen icon (cyan brand color) and friendlier Chinese copy
+- Added transition effect to delete confirmation button
+- Files changed:
+  - dashboard/src/app/(dashboard)/stories/page.tsx
+- **Learnings for future iterations:**
+  - Lucide icons don't support SVG gradient fills easily; use wrapper div with brand color instead
+  - `card-glow` class works directly on any div, not just Card components
+  - `transition-all` is better than `transition-colors` when multiple properties may change (shadow, ring, etc.)
+---
+
+## 2026-03-02 - US-006
+- Implemented terminal page layout and toolbar optimization
+- Restructured toolbar from single flex-wrap row into two distinct rows:
+  - Row 1: Title + WebSocket indicator + status badge + iteration/elapsed info
+  - Row 2: AI tool selector + iteration count selector + start/stop button
+- Running status badge uses brand gradient background (from-cyan-500 to-blue-500)
+- Start button uses brand gradient background with card-glow hover effect
+- Added 2px iteration progress bar below tab bar using brand gradient (absolute positioned)
+- Completion summary bar uses brand gradient background (from-cyan-950/30 to-blue-950/30)
+- Live tab indicator dot changed from bg-green-500 to bg-cyan-500
+- Running status dot in STATUS_COLORS changed to bg-cyan-500
+- Files changed:
+  - dashboard/src/app/(dashboard)/terminal/page.tsx
+- **Learnings for future iterations:**
+  - Two-row toolbar works well: use flex-col with gap-0 on outer container, separate flex rows with pt/pb padding
+  - Absolute-positioned progress bar (bottom-0 h-[2px]) inside relative container is clean for tab underline progress
+  - `card-glow` class works on buttons too for hover glow effect
+  - `transition-all duration-500` on progress bar width gives smooth animation during iteration changes
+---
