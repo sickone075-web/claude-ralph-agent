@@ -1,4 +1,21 @@
-import type { ProgressRecord } from "@/lib/types";
+import type { ProgressRecord, ProgressLogData } from "@/lib/types";
+
+export function parseCodebasePatterns(content: string): string[] {
+  const match = content.match(/## Codebase Patterns\n([\s\S]*?)(?=\n---|\n## \d)/);
+  if (!match) return [];
+  return match[1]
+    .split("\n")
+    .map((l) => l.trim())
+    .filter((l) => l.startsWith("- "))
+    .map((l) => l.replace(/^-\s+/, ""));
+}
+
+export function parseProgressLogData(content: string): ProgressLogData {
+  return {
+    codebasePatterns: parseCodebasePatterns(content),
+    records: parseProgressLog(content),
+  };
+}
 
 export function parseProgressLog(content: string): ProgressRecord[] {
   const records: ProgressRecord[] = [];

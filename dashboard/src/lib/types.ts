@@ -30,6 +30,11 @@ export interface GitCommit {
   author: string;
 }
 
+export interface ProgressLogData {
+  codebasePatterns: string[];
+  records: ProgressRecord[];
+}
+
 export interface ApiResponse<T> {
   data: T | null;
   error: string | null;
