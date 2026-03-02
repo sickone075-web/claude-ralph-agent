@@ -165,6 +165,238 @@ async function stepGitBash(config: RalphConfig): Promise<RalphConfig> {
   return config;
 }
 
+async function stepFeishu(config: RalphConfig): Promise<RalphConfig> {
+  console.log(chalk.bold('\n  📨 飞书 Webhook 配置（可选）\n'));
+
+  const { wantFeishu } = await inquirer.prompt<{ wantFeishu: boolean }>([
+    {
+      type: 'confirm',
+      name: 'wantFeishu',
+      message: '是否配置飞书 Webhook 通知？',
+      default: false,
+    },
+  ]);
+
+  if (!wantFeishu) {
+    console.log(DIM('  跳过飞书配置\n'));
+    return config;
+  }
+
+  console.log(DIM('  创建飞书 Webhook 步骤：'));
+  console.log(DIM('    1. 打开飞书群 → 设置 → 群机器人'));
+  console.log(DIM('    2. 添加"自定义机器人"'));
+  console.log(DIM('    3. 复制 Webhook URL\n'));
+
+  let success = false;
+  while (!success) {
+    const { url } = await inquirer.prompt<{ url: string }>([
+      {
+        type: 'input',
+        name: 'url',
+        message: '粘贴飞书 Webhook URL：',
+        validate: (input: string) => {
+          if (!input.trim()) return 'URL 不能为空';
+          if (!input.trim().startsWith('https://')) return 'URL 必须以 https:// 开头';
+          return true;
+        },
+      },
+    ]);
+
+    const trimmedUrl = url.trim();
+    console.log(DIM('  正在发送测试消息...'));
+
+    try {
+      const res = await fetch(trimmedUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          msg_type: 'interactive',
+          card: {
+            header: {
+              title: { tag: 'plain_text', content: '🤖 Ralph 测试通知' },
+              template: 'blue',
+            },
+            elements: [
+              {
+                tag: 'div',
+                text: {
+                  tag: 'plain_text',
+                  content: 'Ralph 飞书通知配置成功！这是一条测试消息。',
+                },
+              },
+            ],
+          },
+        }),
+      });
+
+      if (res.ok) {
+        const body = await res.json() as Record<string, unknown>;
+        if (body.code === 0 || body.StatusCode === 0) {
+          console.log(OK('  ✅ 测试消息发送成功！请在飞书群中查看。\n'));
+          config.webhookUrl = trimmedUrl;
+          success = true;
+        } else {
+          console.log(ERR(`  ✗ 飞书返回错误: ${JSON.stringify(body)}`));
+        }
+      } else {
+        console.log(ERR(`  ✗ HTTP 错误: ${res.status}`));
+      }
+    } catch (err) {
+      console.log(ERR(`  ✗ 请求失败: ${(err as Error).message}`));
+    }
+
+    if (!success) {
+      const { retry } = await inquirer.prompt<{ retry: boolean }>([
+        {
+          type: 'confirm',
+          name: 'retry',
+          message: '是否重试？',
+          default: true,
+        },
+      ]);
+      if (!retry) {
+        console.log(DIM('  跳过飞书配置\n'));
+        return config;
+      }
+    }
+  }
+
+  return config;
+}
+
+async function stepRunParams(config: RalphConfig, action: 'overwrite' | 'keep' | 'exit'): Promise<RalphConfig> {
+  console.log(chalk.bold('\n  ⚙️  运行参数配置\n'));
+
+  const { tool } = await inquirer.prompt<{ tool: string }>([
+    {
+      type: 'list',
+      name: 'tool',
+      message: 'AI 工具选择',
+      choices: [
+        { name: 'claude（推荐）', value: 'claude' },
+        { name: 'amp', value: 'amp' },
+      ],
+      default: action === 'keep' ? config.defaultTool : 'claude',
+    },
+  ]);
+
+  const { maxIterations } = await inquirer.prompt<{ maxIterations: number }>([
+    {
+      type: 'number',
+      name: 'maxIterations',
+      message: '最大迭代次数',
+      default: action === 'keep' ? config.defaultMaxIterations : 10,
+    },
+  ]);
+
+  const { timeout } = await inquirer.prompt<{ timeout: number }>([
+    {
+      type: 'number',
+      name: 'timeout',
+      message: '超时时间（分钟）',
+      default: action === 'keep' ? config.timeoutMinutes : 30,
+    },
+  ]);
+
+  const { maxFailures } = await inquirer.prompt<{ maxFailures: number }>([
+    {
+      type: 'number',
+      name: 'maxFailures',
+      message: '连续失败上限',
+      default: action === 'keep' ? config.maxConsecutiveFailures : 5,
+    },
+  ]);
+
+  config.defaultTool = tool;
+  config.defaultMaxIterations = maxIterations;
+  config.timeoutMinutes = timeout;
+  config.maxConsecutiveFailures = maxFailures;
+
+  return config;
+}
+
+async function stepFirstProject(config: RalphConfig, action: 'overwrite' | 'keep' | 'exit'): Promise<RalphConfig> {
+  // Skip if keeping config and already has projects
+  if (action === 'keep' && config.projects.length > 0) {
+    console.log(DIM(`\n  已有 ${config.projects.length} 个项目，跳过项目添加\n`));
+    return config;
+  }
+
+  console.log(chalk.bold('\n  📁 项目配置\n'));
+
+  const { wantProject } = await inquirer.prompt<{ wantProject: boolean }>([
+    {
+      type: 'confirm',
+      name: 'wantProject',
+      message: '是否立即添加一个项目？',
+      default: true,
+    },
+  ]);
+
+  if (!wantProject) {
+    console.log(DIM('  可稍后使用 ralph add-project 添加\n'));
+    return config;
+  }
+
+  const { name } = await inquirer.prompt<{ name: string }>([
+    {
+      type: 'input',
+      name: 'name',
+      message: '项目名称：',
+      validate: (input: string) => {
+        if (!input.trim()) return '名称不能为空';
+        if (config.projects.some(p => p.name === input.trim())) return '该名称已存在';
+        return true;
+      },
+    },
+  ]);
+
+  const { projectPath } = await inquirer.prompt<{ projectPath: string }>([
+    {
+      type: 'input',
+      name: 'projectPath',
+      message: '项目绝对路径：',
+      validate: (input: string) => {
+        if (!input.trim()) return '路径不能为空';
+        if (!existsSync(input.trim())) return `路径不存在: ${input.trim()}`;
+        return true;
+      },
+    },
+  ]);
+
+  const trimmedName = name.trim();
+  const trimmedPath = projectPath.trim();
+
+  config.projects.push({ name: trimmedName, path: trimmedPath });
+  config.activeProject = trimmedName;
+  console.log(OK(`  ✓ 项目 "${trimmedName}" 已添加并设为活跃项目`));
+
+  return config;
+}
+
+function stepPluginGuide(): void {
+  console.log(chalk.bold('\n  🔌 Claude Code 插件\n'));
+  console.log('  如需使用 Ralph 中文技能插件，请在 Claude Code 中执行：');
+  console.log(BRAND('    /install-plugin marketplace add sickone075-web/ralph-zh'));
+  console.log('');
+}
+
+function stepCompletion(config: RalphConfig): void {
+  console.log(chalk.bold('\n  🎉 初始化完成！\n'));
+  console.log('  配置摘要：');
+  console.log(`  ├─ AI 工具：        ${config.defaultTool}`);
+  console.log(`  ├─ 最大迭代次数：   ${config.defaultMaxIterations}`);
+  console.log(`  ├─ 超时时间：       ${config.timeoutMinutes} 分钟`);
+  console.log(`  ├─ 连续失败上限：   ${config.maxConsecutiveFailures}`);
+  console.log(`  ├─ 飞书通知：       ${config.webhookUrl ? OK('已配置') : DIM('未配置')}`);
+  console.log(`  ├─ Git Bash 路径：  ${config.gitBashPath || DIM('未设置')}`);
+  console.log(`  └─ 项目：           ${config.projects.length > 0 ? config.projects.map(p => p.name).join(', ') : DIM('无')}`);
+  console.log('');
+  console.log(`  配置已保存到 ${DIM(getConfigPath())}`);
+  console.log(`  执行 ${BRAND('ralph start')} 启动 Web 控制台`);
+  console.log('');
+}
+
 export async function runInit(): Promise<void> {
   const version = getPackageVersion();
 
@@ -194,8 +426,19 @@ export async function runInit(): Promise<void> {
   // Step 3: Git Bash path (Windows only)
   config = await stepGitBash(config);
 
-  // Save config after steps 1-3
+  // Step 4: Feishu webhook (optional)
+  config = await stepFeishu(config);
+
+  // Step 5: Run parameters
+  config = await stepRunParams(config, action);
+
+  // Step 6: First project
+  config = await stepFirstProject(config, action);
+
+  // Step 7: Claude Code plugin guidance
+  stepPluginGuide();
+
+  // Step 8: Completion — save & summary
   writeConfig(config);
-  console.log(OK('\n  ✓ 基础配置已保存'));
-  console.log(DIM('  后续步骤将在 US-005 中实现（飞书配置、项目添加等）\n'));
+  stepCompletion(config);
 }
