@@ -164,7 +164,7 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 9,
-      "passes": false,
+      "passes": true,
       "notes": "Reuse @hello-pangea/dnd from US-008 for drag sorting. Sheet component from shadcn/ui for side panel."
     },
     {

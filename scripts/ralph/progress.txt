@@ -27,6 +27,9 @@ Started: 2026-03-02
 - KanbanBoard component (`components/kanban-board.tsx`) accepts `readOnly` prop for reuse in archives
 - StoryEditDialog component (`components/story-edit-dialog.tsx`) is reusable for story editing
 - @hello-pangea/dnd for drag-and-drop: DragDropContext > Droppable > Draggable; requires "use client"
+- StorySheet component (`components/story-sheet.tsx`) for Sheet-based story create/edit forms
+- StoryEditDialog component (`components/story-edit-dialog.tsx`) for Dialog-based quick story editing
+- AlertDialog from shadcn/ui for delete confirmations
 ---
 
 ## 2026-03-02 - US-001
@@ -180,4 +183,26 @@ Started: 2026-03-02
   - CircularProgress SVG: use strokeDasharray/strokeDashoffset for ring progress animation
   - In Progress detection: find first story with passes=false when Ralph is running
   - Optimistic UI update pattern: update Zustand store immediately after API call, WebSocket sync as fallback
+---
+
+## 2026-03-02 - US-009
+- Built user story management page with full CRUD operations
+- Page header with "User Stories" title and "New Story" button
+- Card list displays all stories sorted by priority, each card shows: ID badge, title, priority tag (color-coded), passes toggle switch
+- "New Story" button opens shadcn/ui Sheet (slide-over panel) with form: title (required), description, acceptance criteria (dynamic add/remove rows), priority (Select: high/medium/low), notes
+- Click card title opens Sheet in edit mode with all fields populated
+- Delete button on each card triggers AlertDialog confirmation before deletion
+- Toggle passes directly on card via Switch without opening details
+- Drag-to-reorder cards using @hello-pangea/dnd with GripVertical handle (auto-calls reorder API on drop)
+- All operations write to prd.json immediately and sync via WebSocket (refreshPrd reads from store)
+- Installed shadcn/ui AlertDialog component
+- Created StorySheet component (separate from StoryEditDialog used in kanban)
+- Build and typecheck pass with zero errors
+- Files changed: `src/app/(dashboard)/stories/page.tsx`, `src/components/story-sheet.tsx` (new), `src/components/ui/alert-dialog.tsx` (new)
+- **Learnings for future iterations:**
+  - StorySheet (Sheet-based) is distinct from StoryEditDialog (Dialog-based) - Sheet is better for detailed forms, Dialog for quick edits
+  - Drag reorder uses sequential priority numbering (1, 2, 3...) assigned by array index after reorder
+  - `handleDragEnd` should be wrapped in useCallback with sortedStories dependency for correct closure
+  - AlertDialog from shadcn/ui works well for delete confirmation with controlled open state via `!!deleteTarget`
+  - Priority label-to-number mapping: high=1-3, medium=4-7, low=8+; preserve existing number within range on edit
 ---
