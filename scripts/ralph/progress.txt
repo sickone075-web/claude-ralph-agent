@@ -13,6 +13,8 @@ Started: 2026-03-02
 - API responses use `{ data: T | null, error: string | null }` format
 - Config helper in `lib/config.ts` reads optional `dashboard/config.json` with defaults
 - Shared types in `lib/types.ts` (PRD, Story, ApiResponse)
+- PRD file read/write helper in `lib/prd-file.ts` with atomic writes and in-memory mutex
+- Write operations: write to .tmp file then rename for atomic updates
 ---
 
 ## 2026-03-02 - US-001
@@ -47,4 +49,24 @@ Started: 2026-03-02
   - Use `satisfies ApiResponse<T>` for type-safe response bodies
   - `path.resolve(process.cwd(), "..")` navigates from dashboard/ to project root
   - Config file is optional: catch ENOENT and return defaults
+---
+
+## 2026-03-02 - US-003
+- Created `lib/prd-file.ts` helper with `readPrd()`, `writePrd()`, `getNextStoryId()` functions
+- Atomic file writes: write to .tmp then rename to prevent corruption
+- In-memory mutex to prevent concurrent write race conditions
+- POST /api/prd/stories creates new story with auto-incremented US-XXX ID
+- PUT /api/prd/stories/[id] updates any story fields (title, description, acceptanceCriteria, priority, passes, notes)
+- DELETE /api/prd/stories/[id] deletes a story
+- PATCH /api/prd updates project-level fields (project, branchName, description)
+- PATCH /api/prd/stories/reorder batch-updates priority order from array of {id, priority}
+- Input validation: title required on POST, returns 400
+- Refactored existing GET routes to use shared `readPrd()` helper
+- Build and typecheck pass with zero errors
+- Files changed: `src/lib/prd-file.ts` (new), `src/app/api/prd/route.ts`, `src/app/api/prd/stories/route.ts`, `src/app/api/prd/stories/[id]/route.ts`, `src/app/api/prd/stories/reorder/route.ts` (new)
+- **Learnings for future iterations:**
+  - Extract shared file read/write logic into a helper module to keep route handlers clean
+  - `fs.renameSync` is atomic on same filesystem - good for preventing partial writes
+  - Next.js route files can export multiple HTTP methods (GET, POST, PUT, DELETE, PATCH) from one file
+  - Reorder endpoint uses PATCH on a sub-route `/stories/reorder` to avoid conflict with `/stories/[id]`
 ---
