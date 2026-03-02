@@ -261,4 +261,54 @@ Started: 2026-03-02
   - Tabs component needs `flex-1 min-h-0 flex flex-col gap-0` to properly fill remaining space with TabsContent
   - ANSI stripping regex `/\x1b\[[0-9;]*m/g` handles most color/style codes for log download
   - History terminal uses shared handleHistoryTerminalReady callback to load buffer when terminal mounts
+- Progress API returns `ProgressLogData` with `codebasePatterns` and `records` fields (not flat `ProgressRecord[]`)
+- Progress parser has `parseCodebasePatterns()` and `parseProgressLogData()` functions for structured extraction
+- Logs page uses shadcn/ui Tabs with `variant="line"` for Progress Log / Git History tabs
+- Timeline UI: vertical line + dot pattern with `ml-4 pl-6` padding, `absolute left-0 -translate-x-1/2` for dot
+- Violet color scheme (`violet-950/40`, `violet-800/50`, `violet-400`) for learnings and codebase patterns sections
+- Git history: `feat:` prefix detection marks commits with "Ralph" badge
+- Fade-in animation for new entries uses `Set<string>` of storyId+date as keys, cleared after 1s timeout
+- Archive API endpoints under `app/api/archives/` scan `scripts/ralph/archive/` directory for archived runs
+- Archive page reuses KanbanBoard with `readOnly` prop and ArchiveProgressLog sub-component for progress timeline
+---
+
+## 2026-03-02 - US-012
+- Built iteration logs page with two-tab layout: Progress Log and Git History
+- Progress Log tab: timeline layout with date, Story ID (clickable link to /stories), summary, files changed (code-styled badges), learnings (violet cards)
+- Codebase Patterns section pinned at top with distinct violet background card when patterns exist
+- Updated progress parser to extract Codebase Patterns section with new `parseCodebasePatterns()` and `parseProgressLogData()` functions
+- Added `ProgressLogData` type to `lib/types.ts` with `codebasePatterns` and `records` fields
+- Updated progress API to return structured `ProgressLogData` instead of flat `ProgressRecord[]`
+- Git History tab: list of commits with monospace hash, message, date, author; Ralph commits (feat:) marked with green badge
+- Search input filters both log entries and commits by keyword across all fields
+- Real-time: new entries prepend with fade-in animation when progress:updated WebSocket event received
+- Build and typecheck pass with zero errors
+- Files changed: `src/app/(dashboard)/logs/page.tsx`, `src/app/api/logs/progress/route.ts`, `src/lib/progress-parser.ts`, `src/lib/types.ts`
+- **Learnings for future iterations:**
+  - Progress parser `parseCodebasePatterns()` uses regex to find the patterns section and extract bullet items
+  - `ProgressLogData` wraps both `codebasePatterns: string[]` and `records: ProgressRecord[]` for structured API response
+  - Fade-in animation: use `Set<string>` with composite keys, setTimeout 1s to clear for transient animation effect
+  - shadcn/ui `TabsList variant="line"` with `TabsTrigger` gives clean underline tab navigation matching terminal page pattern
+  - `useWebSocket().subscribe("progress:updated", ...)` re-fetches both progress and git data on file change
+  - Timeline dot positioning: `absolute left-0 top-2 -translate-x-1/2` centers the dot on the vertical line
+---
+
+## 2026-03-02 - US-013
+- Built archive browsing page with read-only views of past Ralph runs
+- GET /api/archives scans scripts/ralph/archive/ directory, returns list of archive folders with date, feature name, story completion stats
+- GET /api/archives/[folder] returns archived prd.json and progress.txt contents with path traversal prevention
+- Archive list page: each item shows date, feature name, completion progress bar (X/Y completed)
+- Click to expand: loads read-only kanban view (reusing KanbanBoard with readOnly prop) + read-only progress timeline
+- ArchiveProgressLog sub-component renders codebase patterns (violet card) and progress records (timeline with dots)
+- Empty state shown when no archive/ directory or no folders exist
+- Added ArchiveItem and ArchiveDetail types to lib/types.ts
+- Build and typecheck pass with zero errors
+- Files changed: `src/app/(dashboard)/archives/page.tsx`, `src/app/api/archives/route.ts` (new), `src/app/api/archives/[folder]/route.ts` (new), `src/lib/types.ts`
+- **Learnings for future iterations:**
+  - Archive folder name parsing: regex `/^(\d{4}-\d{2}-\d{2})/` extracts date prefix, remainder becomes feature name
+  - Path traversal prevention: `path.resolve()` + `startsWith()` check against archive base directory
+  - Reusing KanbanBoard with `readOnly` prop works seamlessly for archive display
+  - `encodeURIComponent()` for folder names in fetch URLs prevents issues with special characters
+  - Empty state pattern: icon + heading + description centered with padding for visual weight
+  - Progress log sub-component (ArchiveProgressLog) keeps archive page clean by encapsulating timeline rendering
 ---

@@ -35,6 +35,20 @@ export interface ProgressLogData {
   records: ProgressRecord[];
 }
 
+export interface ArchiveItem {
+  folder: string;
+  date: string;
+  featureName: string;
+  totalStories: number;
+  completedStories: number;
+}
+
+export interface ArchiveDetail {
+  folder: string;
+  prd: PRD | null;
+  progress: ProgressLogData | null;
+}
+
 export interface ApiResponse<T> {
   data: T | null;
   error: string | null;
