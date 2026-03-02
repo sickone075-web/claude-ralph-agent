@@ -6,6 +6,7 @@
 - Use `npx tsc --noEmit` for root TypeScript checks; `cd dashboard && npm run build` for dashboard checks
 - CLI uses Commander.js with ESM imports; version read from package.json via readFileSync (not import assertion)
 - `npm link` at root makes `ralph` command available globally for testing
+- Global config at ~/.ralph/config.json; use src/lib/global-config.ts for read/write; atomic writes use tmp file in same dir (not os.tmpdir) to avoid cross-drive rename failures on Windows
 
 # Ralph Progress Log
 Started: 2026年03月 2日 22:51:22
@@ -29,4 +30,13 @@ Started: 2026年03月 2日 22:51:22
   - Commander.js `.action()` on program itself handles the no-args case (shows help with exit 0)
   - `npx tsc` compiles to dist/ and preserves shebang line from source
   - `npm link` works for global command testing without publishing
+---
+
+## 2026-03-02 23:30 - US-003
+- What was implemented: Global config module at src/lib/global-config.ts. Exports readConfig(), writeConfig(), getConfigPath(), getConfigDir() functions and RalphConfig/ProjectConfig types. Config stored at ~/.ralph/config.json. Auto-creates directory and default config on first read. Uses atomic write (tmp file + rename in same directory to avoid cross-drive issues on Windows).
+- Files changed: src/lib/global-config.ts (new)
+- **Learnings for future iterations:**
+  - On Windows, `os.tmpdir()` and `os.homedir()` may be on different drives, so `renameSync` across them fails. Use a tmp file in the same directory as the target for atomic writes.
+  - Config merges with defaults on read, so adding new fields to DEFAULT_CONFIG is backward-compatible with existing config files.
+  - The module uses only Node.js built-in modules (fs, os, path, crypto) — no external dependencies needed.
 ---

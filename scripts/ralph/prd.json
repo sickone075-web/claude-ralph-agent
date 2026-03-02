@@ -55,7 +55,7 @@
         "TypeScript 类型检查通过"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": "依赖 US-001 的项目结构。该模块被 CLI 命令和 dashboard server 端代码共同引用。【重要】不要移动或重命名 scripts/ralph/ 目录下的任何文件（ralph.sh、CLAUDE.md、prd.json、progress.txt），这是 Ralph 自动化运行时的工作目录。"
     },
     {
