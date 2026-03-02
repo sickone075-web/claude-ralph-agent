@@ -131,7 +131,7 @@
         "使用 dev-browser skill 在浏览器中验证"
       ],
       "priority": 7,
-      "passes": false,
+      "passes": true,
       "notes": "修改文件：dashboard/src/app/(dashboard)/logs/page.tsx。时间线竖线是 absolute 定位的 div，圆点也是 absolute 定位。gradient-border 类在 US-001 中定义。"
     },
     {

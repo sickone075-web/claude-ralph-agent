@@ -102,7 +102,7 @@ export default function LogsPage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <ScrollText className="h-5 w-5 text-zinc-400" />
-          <h2 className="text-xl font-semibold">Iteration Logs</h2>
+          <h2 className="text-xl font-semibold">迭代日志</h2>
         </div>
       </div>
 
@@ -115,7 +115,7 @@ export default function LogsPage() {
             </TabsTrigger>
             <TabsTrigger value="git">
               <GitCommitHorizontal className="h-4 w-4 mr-1" />
-              Git History
+              Git 历史
             </TabsTrigger>
           </TabsList>
 
@@ -123,10 +123,10 @@ export default function LogsPage() {
           <div className="relative ml-auto">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
             <Input
-              placeholder="Search logs..."
+              placeholder="搜索日志..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-8 h-8 w-48 bg-zinc-900 border-zinc-800 text-sm"
+              className="pl-8 h-8 w-48 bg-zinc-900 border-zinc-800 text-sm focus:ring-cyan-500/50 focus:border-cyan-500/50"
             />
           </div>
         </div>
@@ -136,12 +136,12 @@ export default function LogsPage() {
           <div className="space-y-4">
             {/* Codebase Patterns pinned at top */}
             {progressData.codebasePatterns.length > 0 && (
-              <Card className="bg-violet-950/40 border-violet-800/50">
+              <Card className="gradient-border bg-violet-950/40 border-violet-800/50">
                 <CardContent className="p-4">
                   <div className="flex items-center gap-2 mb-3">
                     <Lightbulb className="h-4 w-4 text-violet-400" />
                     <h3 className="text-sm font-semibold text-violet-300">
-                      Codebase Patterns
+                      代码库模式
                     </h3>
                   </div>
                   <ul className="space-y-1.5">
@@ -163,13 +163,16 @@ export default function LogsPage() {
 
             {/* Timeline */}
             {filteredRecords.length === 0 ? (
-              <p className="text-zinc-500 text-sm py-8 text-center">
-                {search ? "No matching log entries." : "No progress entries yet."}
-              </p>
+              <div className="text-center py-8">
+                <ScrollText className="h-12 w-12 mx-auto mb-3 text-cyan-500" />
+                <p className="text-zinc-500 text-sm">
+                  {search ? "没有匹配的日志条目。" : "暂无进度记录，Ralph 开始运行后将在此显示迭代日志。"}
+                </p>
+              </div>
             ) : (
               <div className="relative ml-4">
                 {/* Timeline line */}
-                <div className="absolute left-0 top-2 bottom-2 w-px bg-zinc-800" />
+                <div className="absolute left-0 top-2 bottom-2 w-px" style={{ background: 'linear-gradient(to bottom, #06B6D4, #3B82F6, transparent)' }} />
 
                 {filteredRecords.map((record, i) => {
                   const id = record.storyId + record.date;
@@ -183,7 +186,7 @@ export default function LogsPage() {
                       }`}
                     >
                       {/* Timeline dot */}
-                      <div className="absolute left-0 top-2 -translate-x-1/2 h-2.5 w-2.5 rounded-full bg-zinc-600 border-2 border-zinc-900" />
+                      <div className="absolute left-0 top-2 -translate-x-1/2 h-2.5 w-2.5 rounded-full bg-cyan-500 border-2 border-zinc-900" style={{ boxShadow: '0 0 6px rgba(6, 182, 212, 0.4)' }} />
 
                       <div className="space-y-2">
                         {/* Header row */}
@@ -227,12 +230,12 @@ export default function LogsPage() {
 
                         {/* Learnings */}
                         {record.learnings.length > 0 && (
-                          <Card className="bg-violet-950/30 border-violet-900/40">
+                          <Card className="bg-violet-950/30 border-violet-900/40 transition-shadow duration-200 hover:shadow-[0_0_12px_rgba(139,92,246,0.15)]">
                             <CardContent className="p-3">
                               <div className="flex items-center gap-1.5 mb-1.5">
                                 <Lightbulb className="h-3 w-3 text-violet-400" />
                                 <span className="text-xs font-medium text-violet-400">
-                                  Learnings
+                                  学习记录
                                 </span>
                               </div>
                               <ul className="space-y-1">
@@ -264,7 +267,7 @@ export default function LogsPage() {
         <TabsContent value="git" className="mt-4 overflow-y-auto">
           {filteredCommits.length === 0 ? (
             <p className="text-zinc-500 text-sm py-8 text-center">
-              {search ? "No matching commits." : "No git commits found."}
+              {search ? "没有匹配的提交记录。" : "未找到 Git 提交记录。"}
             </p>
           ) : (
             <div className="space-y-1">
@@ -282,7 +285,7 @@ export default function LogsPage() {
                       {commit.message}
                     </span>
                     {isRalph && (
-                      <Badge className="bg-green-900/60 text-green-400 text-[10px] px-1.5 py-0 shrink-0">
+                      <Badge className="bg-gradient-to-r from-cyan-600 to-blue-600 text-white text-[10px] px-1.5 py-0 shrink-0">
                         Ralph
                       </Badge>
                     )}
@@ -306,7 +309,7 @@ export default function LogsPage() {
 function formatDate(dateStr: string): string {
   try {
     const d = new Date(dateStr);
-    return d.toLocaleDateString("en-US", {
+    return d.toLocaleDateString("zh-CN", {
       month: "short",
       day: "numeric",
       hour: "2-digit",

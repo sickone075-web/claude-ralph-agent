@@ -116,3 +116,22 @@ Started: 2026-03-02
   - `card-glow` class works on buttons too for hover glow effect
   - `transition-all duration-500` on progress bar width gives smooth animation during iteration changes
 ---
+
+## 2026-03-02 - US-007
+- Implemented logs page timeline and search enhancements
+- Timeline vertical line changed from solid bg-zinc-800 to brand gradient (linear-gradient cyan→blue→transparent)
+- Timeline dots changed from bg-zinc-600 to bg-cyan-500 with brand glow effect (box-shadow)
+- Search input gets brand color focus ring (focus:ring-cyan-500/50 focus:border-cyan-500/50)
+- Codebase patterns card now uses gradient-border class for brand gradient border
+- Learning record cards have purple hover glow effect (transition-shadow + hover:shadow violet)
+- Empty state enhanced with ScrollText icon (brand cyan) and friendlier Chinese copy
+- Ralph badge in git commits changed from green to brand gradient (from-cyan-600 to-blue-600)
+- Date format preserved as zh-CN localization
+- Files changed:
+  - dashboard/src/app/(dashboard)/logs/page.tsx
+- **Learnings for future iterations:**
+  - `style={{ background: 'linear-gradient(...)' }}` is needed for CSS gradients on single-pixel timeline lines since Tailwind gradient classes need width
+  - `boxShadow` inline style works well for glow effects that need specific rgba values
+  - `gradient-border` class from globals.css can be combined with existing Card className
+  - `transition-shadow duration-200` + `hover:shadow-[...]` is the pattern for hover glow effects
+---
