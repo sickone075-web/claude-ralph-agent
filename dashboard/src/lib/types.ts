@@ -15,6 +15,21 @@ export interface PRD {
   userStories: Story[];
 }
 
+export interface ProgressRecord {
+  date: string;
+  storyId: string;
+  summary: string;
+  filesChanged: string[];
+  learnings: string[];
+}
+
+export interface GitCommit {
+  hash: string;
+  message: string;
+  date: string;
+  author: string;
+}
+
 export interface ApiResponse<T> {
   data: T | null;
   error: string | null;
