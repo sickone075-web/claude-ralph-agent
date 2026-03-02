@@ -1,212 +1,226 @@
 {
-  "project": "Ralph Dashboard",
-  "branchName": "ralph/dashboard-redesign",
-  "description": "Ralph 控制台视觉重设计 - 从 zinc 暗色基调升级为 Vercel/Linear 风格的现代科技感设计，使用青蓝渐变品牌色，Bento Grid 布局，精致微交互动画",
+  "project": "claude-ralph",
+  "branchName": "ralph/cli-global-install",
+  "description": "Ralph CLI 全局安装工具 — npm 全局安装、交互式初始化引导、Web 控制台预构建启动、多项目管理、统一配置管理",
   "userStories": [
     {
       "id": "US-001",
-      "title": "全局 CSS 变量和动画基础设施",
-      "description": "作为开发者，我需要建立统一的 CSS 变量体系和动画工具类，为后续页面重设计提供基础。",
+      "title": "项目结构迁移与整合",
+      "description": "作为开发者，我需要将现有分散的 dashboard 和 scripts 整合为统一的 npm 可发布包结构，以便作为 claude-ralph 包发布。",
       "acceptanceCriteria": [
-        "在 globals.css 中添加品牌色 CSS 变量：--brand-cyan（#06B6D4）、--brand-blue（#3B82F6），以及在 .dark 块中保持一致",
-        "添加动画 keyframes：glow（发光脉冲）、shimmer（骨架屏闪烁）、fade-in（淡入）、slide-up（上滑入），使用 @keyframes 定义",
-        "添加工具类：.card-glow（hover 时 box-shadow 出现品牌色微光 + border-color 过渡）、.gradient-border（使用 background linear-gradient + padding 1px 技巧）、.skeleton（animate-pulse + zinc 背景色占位）",
-        "创建 components/skeleton-card.tsx 骨架屏卡片组件，接受 className prop，使用 .skeleton 类",
-        "现有页面不受影响，npm run build 通过",
-        "类型检查通过"
+        "创建根目录 package.json：name='claude-ralph'，bin.ralph='./dist/bin/ralph.js'，包含 CLI 依赖（commander、inquirer、chalk、open）",
+        "创建根目录 tsconfig.json：outDir='dist'，target ES2020+，include=['src/**/*']",
+        "创建 src/ 目录结构：src/bin/ralph.ts（空入口占位）、src/commands/（空目录）、src/lib/（空目录）",
+        "重组 scripts 目录：将 scripts/ralph/ralph.sh、scripts/ralph/CLAUDE.md、scripts/ralph/prompt.md 移动到 scripts/（去掉 ralph 子目录层级）",
+        "保留 scripts/ralph/archive/ 和运行时数据文件（prd.json、progress.txt、.last-branch）在原位不动",
+        "dashboard/ 目录保持原位不动（已在正确位置）",
+        ".gitignore 更新：排除 dist/、添加 node_modules/ 在根目录级别",
+        "cd dashboard && npm run build 能正常通过（验证 dashboard 未被破坏）",
+        "TypeScript 类型检查通过（tsc --noEmit 对根目录）"
       ],
       "priority": 1,
       "passes": true,
-      "notes": "这是所有后续故事的基础依赖，必须最先完成。品牌渐变使用 Tailwind 的 from-cyan-500 to-blue-500。注意 Tailwind CSS v4 的语法。"
+      "notes": "dashboard 已在目标位置，无需移动。scripts 需要去掉 ralph/ 子目录层级。根 package.json 和 tsconfig.json 是新建。"
     },
     {
       "id": "US-002",
-      "title": "侧边栏视觉升级",
-      "description": "作为用户，我希望侧边栏更具品牌辨识度和交互质感，提升整体专业感。",
+      "title": "npm 包结构和 CLI 入口",
+      "description": "作为用户，我希望通过 npm install -g claude-ralph 安装后获得 ralph 全局命令，以便在任意目录使用。",
       "acceptanceCriteria": [
-        "Logo 区域 Ralph 文字改为品牌渐变色，使用 bg-gradient-to-r from-cyan-500 to-blue-500 bg-clip-text text-transparent",
-        "选中态导航项左侧添加 2px 品牌渐变条竖线，背景改为 bg-zinc-800/50",
-        "未选中导航项 hover 时背景平滑过渡，添加 transition-colors duration-200",
-        "底部状态指示器区域的顶部 border 改为微妙的品牌渐变色（使用 border-image 或 background-gradient），从 cyan-500 渐变到透明",
-        "移动端 Sheet 侧边栏同步更新上述所有样式",
-        "保持所有导航链接和路由功能正常",
-        "类型检查通过",
-        "使用 dev-browser skill 在浏览器中验证"
+        "src/bin/ralph.ts 使用 Commander.js 注册子命令：init、start、stop、config、add-project",
+        "无参数执行 ralph 时显示中文帮助信息，包含定位说明：'Ralph 管理工具 — 安装引导、启动控制台、管理项目。AI 对话请在 Claude Code 中进行。'",
+        "ralph --version 输出 package.json 中的版本号",
+        "每个子命令暂时输出占位信息（如 'ralph init - 即将实现'），后续故事填充实际逻辑",
+        "scripts/ 目录通过 package.json files 字段包含在 npm 包中",
+        "tsc 编译成功，dist/bin/ralph.js 生成",
+        "ralph.js 顶部包含 #!/usr/bin/env node shebang",
+        "本地 npm link 后 ralph --help 和 ralph --version 正常工作"
       ],
       "priority": 2,
-      "passes": true,
-      "notes": "修改文件：dashboard/src/components/sidebar.tsx 和 dashboard/src/components/ralph-status-indicator.tsx。侧边栏使用 NavContent 组件同时在桌面和移动端渲染。"
+      "passes": false,
+      "notes": "依赖 US-001 的项目结构。Commander.js 的 .description() 和 .action() 用于注册命令。"
     },
     {
       "id": "US-003",
-      "title": "仪表盘首页 Bento Grid 布局重构",
-      "description": "作为用户，我希望仪表盘首页使用 Bento Grid 布局，让信息层次更清晰、视觉更丰富。",
+      "title": "全局配置模块",
+      "description": "作为系统，我需要统一的配置读写模块，以便 CLI、ralph.sh、Web 控制台共享同一份配置。",
       "acceptanceCriteria": [
-        "统计区域从 grid-cols-2 md:grid-cols-4 等分改为 Bento Grid：使用 grid-cols-4，左侧项目信息卡片 col-span-2 row-span-2，右侧 4 个统计卡片各占 1 格",
-        "统计卡片添加 card-glow 类实现 hover 发光效果",
-        "完成率圆环进度的 SVG stroke 改为品牌渐变色（使用 SVG linearGradient 从 #06B6D4 到 #3B82F6），替代纯 green-500",
-        "项目名称字号从 text-xl 增大到 text-2xl，状态 Badge 在 running 状态使用品牌渐变背景 bg-gradient-to-r from-cyan-500 to-blue-500",
-        "看板区域保持原有三列，但看板列标题的圆点颜色统一到品牌色系（待处理=amber，进行中=cyan，已完成=green）",
-        "保持所有看板拖拽和故事编辑功能正常",
-        "移动端自动降级为单列布局",
-        "类型检查通过",
-        "使用 dev-browser skill 在浏览器中验证"
+        "新建 src/lib/global-config.ts 模块，导出 readConfig()、writeConfig()、getConfigPath()、getConfigDir() 函数",
+        "配置文件路径为 ~/.ralph/config.json（使用 os.homedir() 跨平台获取 home 目录）",
+        "首次调用 readConfig() 时若目录/文件不存在，自动创建 ~/.ralph/ 目录并写入默认配置",
+        "默认配置包含字段：defaultTool='claude'、defaultMaxIterations=10、timeoutMinutes=30、maxConsecutiveFailures=5、retryIntervalSeconds=3600、webhookUrl=''、gitBashPath=''、port=3000、wsPort=3001、terminalFontSize=14、autoOpenBrowser=true、activeProject=''、projects=[]",
+        "projects 数组元素结构：{ name: string, path: string }",
+        "writeConfig() 使用 tmp 文件 + rename 的原子写入方式",
+        "导出 TypeScript 类型 RalphConfig 和 ProjectConfig",
+        "TypeScript 类型检查通过"
       ],
       "priority": 3,
-      "passes": true,
-      "notes": "修改文件：dashboard/src/app/(dashboard)/dashboard/page.tsx。Bento Grid 使用 CSS Grid 实现。圆环进度 SVG 需要添加 <defs><linearGradient> 元素。statusBadge 配置对象需要更新 running 状态的 className。"
+      "passes": false,
+      "notes": "依赖 US-001 的项目结构。该模块被 CLI 命令和 dashboard server 端代码共同引用。"
     },
     {
       "id": "US-004",
-      "title": "仪表盘骨架屏加载态",
-      "description": "作为用户，我希望仪表盘在数据加载时显示美观的骨架屏占位，而不是空白。",
+      "title": "交互式初始化引导（上）— 欢迎、环境检测、Git Bash",
+      "description": "作为新用户，我希望执行 ralph init 后通过分步引导完成环境检测和基础配置。",
       "acceptanceCriteria": [
-        "当 prd 为 null 时，统计区域显示骨架屏卡片占位（使用 US-001 创建的 skeleton-card 组件），布局与实际卡片一致",
-        "项目名称区域显示骨架屏文字占位条（宽度约 200px，高度约 28px）",
-        "看板区域显示 3 列骨架屏占位（每列 2-3 个骨架卡片）",
-        "骨架屏使用 animate-pulse 动画效果",
-        "数据加载完成后骨架屏平滑替换为实际内容",
-        "类型检查通过",
-        "使用 dev-browser skill 在浏览器中验证"
+        "新建 src/commands/init.ts，注册到 Commander 的 init 子命令",
+        "步骤 1 — 欢迎与权限声明：显示 Ralph ASCII Logo 和版本号；显示定位说明；列出权限清单（Claude Code 执行权限、Git 操作、文件读写、网络请求）；用户确认才能继续，拒绝则退出",
+        "步骤 2 — 环境检测：检测 Node.js 版本（>= 18），不满足则警告并退出；检测 claude CLI 是否可用（使用 child_process.execSync which/where），不可用则显示安装指引但允许继续",
+        "步骤 3 — Windows Git Bash 路径（仅 Windows）：检测 process.platform === 'win32' 时进入此步骤；自动检测 C:\\Program Files\\Git\\bin\\bash.exe 和 C:\\devTools\\Git\\bin\\bash.exe；找到则显示结果并确认，未找到则要求手动输入；验证输入路径的文件存在；路径保存到配置的 gitBashPath 字段",
+        "检测到已有 ~/.ralph/config.json 时，在步骤 1 前询问：覆盖/保留/退出",
+        "使用 Inquirer.js 实现所有交互式提示",
+        "使用 chalk 美化终端输出（标题用品牌色、警告用黄色、错误用红色）",
+        "TypeScript 类型检查通过"
       ],
       "priority": 4,
-      "passes": true,
-      "notes": "修改文件：dashboard/src/app/(dashboard)/dashboard/page.tsx。在 DashboardPage 组件开头添加 if (!prd) return <骨架屏布局> 条件渲染。"
+      "passes": false,
+      "notes": "依赖 US-002 的 CLI 入口和 US-003 的配置模块。这是 init 流程的前半部分，后半部分在 US-005。"
     },
     {
       "id": "US-005",
-      "title": "用户故事页视觉优化",
-      "description": "作为用户，我希望故事列表页有更好的视觉层次和交互反馈。",
+      "title": "交互式初始化引导（下）— 飞书、参数、项目、完成",
+      "description": "作为新用户，我希望在环境检测后继续完成飞书通知、运行参数、项目配置等初始化步骤。",
       "acceptanceCriteria": [
-        "页面标题 User Stories 旁添加故事总数 Badge，使用品牌渐变背景 bg-gradient-to-r from-cyan-500 to-blue-500 text-white",
-        "故事列表每个卡片添加 card-glow 类实现 hover 发光效果",
-        "优先级标签改为渐变背景：高=bg-gradient-to-r from-red-500/20 to-red-400/10、中=from-amber-500/20 to-amber-400/10、低=from-zinc-500/20 to-zinc-400/10",
-        "拖拽时的阴影效果增强为 ring-cyan-500/20 品牌色 ring",
-        "通过/未通过图标添加 transition-all duration-200 过渡动画",
-        "空状态添加 BookOpen 图标（64px 大小 + 品牌渐变色）和更友好的文案",
-        "删除确认对话框的删除按钮添加 hover 过渡效果",
-        "保持拖拽排序、CRUD、通过状态切换功能正常",
-        "类型检查通过",
-        "使用 dev-browser skill 在浏览器中验证"
+        "在 src/commands/init.ts 中接续 US-004 的流程，添加步骤 4-8",
+        "步骤 4 — 飞书 Webhook 配置（可选）：询问是否配置（Y/n）；选 Y 则显示创建步骤说明；用户粘贴 URL 后发送测试消息（使用 fetch POST 飞书 interactive 卡片 JSON）；成功提示 ✅，失败允许重试或跳过",
+        "步骤 5 — 运行参数配置：AI 工具选择 claude/amp（默认 claude）；最大迭代次数（默认 10）；超时时间/分钟（默认 30）；连续失败上限（默认 5）",
+        "步骤 6 — 首个项目配置：询问是否立即添加项目（Y/n）；输入项目名称和绝对路径；验证路径存在；写入 projects 数组并设为 activeProject",
+        "步骤 7 — Claude Code 插件引导：提示执行 /install-plugin marketplace add sickone075-web/ralph-zh",
+        "步骤 8 — 完成：显示配置摘要表格；写入 ~/.ralph/config.json；提示执行 ralph start",
+        "TypeScript 类型检查通过"
       ],
       "priority": 5,
-      "passes": true,
-      "notes": "修改文件：dashboard/src/app/(dashboard)/stories/page.tsx。getPriorityTag 函数需要更新返回的 className。空状态目前是纯文字 div。"
+      "passes": false,
+      "notes": "依赖 US-004。飞书测试消息使用 Node.js 内置 fetch（Node 18+）。配置摘要用 console.table 或手动格式化。"
     },
     {
       "id": "US-006",
-      "title": "终端页布局和工具栏优化",
-      "description": "作为用户，我希望终端页的工具栏更整洁、状态展示更直观。",
+      "title": "Web 控制台启动命令（ralph start/stop）",
+      "description": "作为用户，我希望执行 ralph start 即可启动 Web 控制台并自动打开浏览器，查看项目需求进度和管理自动化任务。",
       "acceptanceCriteria": [
-        "顶部工具栏改为两行结构：第一行放标题+WebSocket状态+运行状态Badge+迭代进度+耗时，第二行放AI工具选择器+迭代次数选择器+启动/停止按钮",
-        "运行中状态 Badge 使用品牌渐变背景 bg-gradient-to-r from-cyan-500 to-blue-500 替代纯绿色",
-        "标签栏下方添加 1-2px 高度的迭代进度条，使用品牌渐变色，宽度为 iteration/totalIterations 百分比",
-        "完成摘要条背景改为品牌渐变半透明 bg-gradient-to-r from-cyan-950/30 to-blue-950/30",
-        "实时标签旁的运行指示圆点改为品牌色 bg-cyan-500",
-        "启动按钮使用品牌渐变背景 bg-gradient-to-r from-cyan-600 to-blue-600，hover 时发光",
-        "工具栏按钮（清除/滚动/下载）已有 title 属性作为 tooltip",
-        "保持终端渲染、WebSocket 通信、键盘输入、标签切换功能正常",
-        "类型检查通过",
-        "使用 dev-browser skill 在浏览器中验证"
+        "新建 src/commands/start.ts，注册到 Commander 的 start 子命令",
+        "ralph start 流程：读取 ~/.ralph/config.json（不存在则自动触发 ralph init）；检查端口 3000 是否被占用（使用 net.createServer 尝试监听）；启动 Next.js production server（node dashboard/.next/standalone/server.js，端口 3000）；启动 WebSocket server（tsx dashboard/server/ws.ts，端口 3001）",
+        "设置环境变量 RALPH_SCRIPTS_DIR 指向 npm 包内的 scripts/ 目录",
+        "终端输出启动信息：Ralph 控制台已启动、Web 控制台 URL、WebSocket URL、按 Ctrl+C 停止",
+        "自动打开浏览器访问 http://localhost:3000（使用 open 包）",
+        "支持 --no-open 禁止自动打开浏览器",
+        "Ctrl+C 优雅关闭：先 kill 子进程再退出",
+        "新建 src/commands/stop.ts：通过查找端口 3000 的占用进程来停止控制台",
+        "TypeScript 类型检查通过"
       ],
       "priority": 6,
-      "passes": true,
-      "notes": "修改文件：dashboard/src/app/(dashboard)/terminal/page.tsx。工具栏已经使用 flex-wrap，需要改为两个独立的 flex 行。进度条可以用一个绝对定位的 div 在标签栏下方。注意不要破坏 xterm.js 终端的高度计算。"
+      "passes": false,
+      "notes": "依赖 US-002 和 US-003。standalone 模式下 Next.js server 是独立的 node 进程。WebSocket server 需要用 tsx 运行（TypeScript）。"
     },
     {
       "id": "US-007",
-      "title": "日志页时间线和搜索增强",
-      "description": "作为用户，我希望日志页的时间线更美观、搜索体验更好。",
+      "title": "Web 控制台配置模块重构",
+      "description": "作为系统，我需要 Web 控制台的配置读写模块从项目级 config.json 迁移到全局 ~/.ralph/config.json。",
       "acceptanceCriteria": [
-        "时间线竖线从 bg-zinc-800 改为品牌渐变色，使用 background: linear-gradient(to bottom, #06B6D4, #3B82F6, transparent)",
-        "时间线节点圆点添加品牌色外发光效果，使用 box-shadow: 0 0 6px rgba(6, 182, 212, 0.4)",
-        "搜索框获得焦点时显示品牌色边框 focus:ring-cyan-500/50 focus:border-cyan-500/50",
-        "代码库模式卡片使用 gradient-border 类实现品牌渐变边框",
-        "学习记录区域保持紫色主题但添加微光效果（hover 时 box-shadow 增加紫色光晕）",
-        "空状态文字前添加 ScrollText 图标装饰（品牌渐变色）",
-        "Git 提交列表中 Ralph 标签改为品牌渐变色 bg-gradient-to-r from-cyan-600 to-blue-600",
-        "日期格式保持 zh-CN 本地化",
-        "保持搜索过滤、WebSocket 实时更新功能正常",
-        "类型检查通过",
-        "使用 dev-browser skill 在浏览器中验证"
+        "dashboard/src/lib/config.ts 重构：CONFIG_FILE 改为 ~/.ralph/config.json（使用 os.homedir()）",
+        "DashboardConfig 接口扩展：新增 webhookUrl、timeoutMinutes、maxConsecutiveFailures、retryIntervalSeconds、gitBashPath、autoOpenBrowser、activeProject、projects 字段",
+        "移除原有的 prdPath、progressPath、ralphScriptPath 字段",
+        "新增 getActiveProjectPaths() 函数：根据 activeProject 返回 { prdPath, progressPath, projectPath }",
+        "ralphScriptPath 通过环境变量 RALPH_SCRIPTS_DIR 或 __dirname 回溯定位到 npm 包的 scripts/ralph.sh",
+        "getConfig() 和 writeConfig() 适配新结构",
+        "所有现有 API 路由（prd、progress、ralph/start、logs、archives、config）适配新路径逻辑：使用 getActiveProjectPaths() 替代硬编码路径",
+        "WebSocket server（ws.ts）的文件监听路径适配为活跃项目路径",
+        "TypeScript 类型检查通过"
       ],
       "priority": 7,
-      "passes": true,
-      "notes": "修改文件：dashboard/src/app/(dashboard)/logs/page.tsx。时间线竖线是 absolute 定位的 div，圆点也是 absolute 定位。gradient-border 类在 US-001 中定义。"
+      "passes": false,
+      "notes": "这是多项目管理的基础。现有 14 个 API 路由和 ws.ts 都需要从 config 获取路径。逐个更新导入和路径引用。"
     },
     {
       "id": "US-008",
-      "title": "归档页展开动画和空状态优化",
-      "description": "作为用户，我希望归档页有更好的展开/收起体验和更友好的空状态。",
+      "title": "多项目管理 — 数据模型与 API",
+      "description": "作为系统，我需要支持多项目的数据读写，以便 Web 控制台能切换不同项目查看需求任务进度和启动自动化任务。",
       "acceptanceCriteria": [
-        "归档项展开/收起使用 CSS grid-rows 动画（grid-template-rows: 0fr → 1fr + transition-all duration-300）或条件渲染配合 animate-fade-in 类",
-        "归档项 hover 时左侧显示 2px 品牌渐变边框，类似侧边栏选中态效果",
-        "进度条颜色从 bg-green-600 改为品牌渐变色 bg-gradient-to-r from-cyan-500 to-blue-500",
-        "空状态 Archive 图标放大到 h-16 w-16，使用品牌渐变色（bg-clip-text text-transparent），文案改为更友好的中文",
-        "归档详情中的只读看板继承全局品牌色系更新（列标题圆点颜色等）",
-        "保持归档列表加载、详情展示、展开/收起功能正常",
-        "类型检查通过",
-        "使用 dev-browser skill 在浏览器中验证"
+        "新增 API 路由 GET /api/projects — 返回 config 中的 projects 数组和 activeProject",
+        "新增 API 路由 POST /api/projects — 添加新项目（参数：name、path），验证路径存在，写入 config",
+        "新增 API 路由 PUT /api/projects/active — 切换活跃项目（参数：项目 name），更新 activeProject",
+        "新增 API 路由 DELETE /api/projects/[name] — 删除项目（仅从配置移除，不删除文件）",
+        "ralph/start API 启动时 cwd 设为活跃项目路径",
+        "无项目时 API 返回空数据（不报错）",
+        "新建 src/commands/add-project.ts：CLI 交互式添加项目（输入名称和路径，写入 config）",
+        "TypeScript 类型检查通过"
       ],
       "priority": 8,
-      "passes": true,
-      "notes": "修改文件：dashboard/src/app/(dashboard)/archives/page.tsx。展开动画推荐使用 CSS grid-template-rows 技巧：外层 div 设置 grid + transition，内层 div overflow-hidden。空状态的 FolderOpen 图标可以改为 Archive 图标。"
+      "passes": false,
+      "notes": "依赖 US-007 的配置模块重构。API 路由放在 dashboard/src/app/api/projects/ 目录。"
     },
     {
       "id": "US-009",
-      "title": "设置页表单分组和反馈优化",
-      "description": "作为用户，我希望设置页的表单更美观、保存反馈更明确。",
+      "title": "多项目管理 — Web 控制台 UI",
+      "description": "作为用户，我希望在 Web 控制台侧边栏顶部通过下拉菜单切换项目，以便管理多个 Ralph 项目。",
       "acceptanceCriteria": [
-        "每个设置分组 Card 标题左侧添加 3px 宽品牌渐变竖线装饰（使用 border-left + border-image: linear-gradient）",
-        "所有 Input 输入框 focus 态添加品牌色 ring：focus:ring-cyan-500/30 focus:border-cyan-500/50",
-        "Slider 滑块轨道使用品牌渐变色（修改 Slider 的 range 样式为 bg-gradient-to-r from-cyan-500 to-blue-500）",
-        "保存按钮使用品牌渐变背景 bg-gradient-to-r from-cyan-600 to-blue-600，hover 时添加 card-glow 发光效果",
-        "恢复默认按钮保持 outline 样式但添加 transition-all duration-200 hover 过渡",
-        "加载态从纯文字改为骨架屏布局（使用 skeleton-card 组件模拟 3 个 Card 占位）",
-        "保存成功 Toast 正常触发（sonner toast 样式不需要修改）",
-        "保持配置读取、保存、重置功能正常",
-        "类型检查通过",
+        "侧边栏顶部（Logo 下方）新增项目切换下拉菜单组件 project-switcher.tsx",
+        "下拉显示所有项目名称，当前活跃项目带有 ✓ 标识",
+        "点击项目名称调用 PUT /api/projects/active 切换，切换后刷新仪表盘数据",
+        "下拉底部有「+ 添加项目」按钮，点击弹出对话框（输入名称和路径）",
+        "无项目时侧边栏显示引导提示'点击添加你的第一个项目'",
+        "切换项目时有加载过渡（骨架屏）",
+        "样式与现有侧边栏统一（zinc-950 背景、品牌渐变色高亮）",
+        "移动端下拉正常工作",
+        "TypeScript 类型检查通过",
         "使用 dev-browser skill 在浏览器中验证"
       ],
       "priority": 9,
-      "passes": true,
-      "notes": "修改文件：dashboard/src/app/(dashboard)/settings/page.tsx。Slider 组件在 components/ui/slider.tsx，可能需要修改其内部样式或通过 className 覆盖。border-image 兼容性良好。"
+      "passes": false,
+      "notes": "依赖 US-008 的 projects API。使用 shadcn/ui 的 DropdownMenu 或 Select 组件。"
     },
     {
       "id": "US-010",
-      "title": "看板卡片和看板面板视觉升级",
-      "description": "作为开发者，我需要统一看板卡片和看板面板的视觉风格，使其与新设计语言一致。",
+      "title": "设置页扩展 — 完整配置管理",
+      "description": "作为用户，我希望在 Web 控制台设置页管理所有 Ralph 配置，无需编辑配置文件。",
       "acceptanceCriteria": [
-        "kanban-card.tsx：卡片添加 card-glow 类实现 hover 发光效果",
-        "kanban-card.tsx：拖拽态从 shadow-lg shadow-black/50 ring-1 ring-zinc-700 改为 shadow-lg shadow-cyan-500/10 ring-1 ring-cyan-500/30",
-        "kanban-board.tsx：进行中列标题圆点从 bg-blue-500 改为 bg-cyan-500 品牌色",
-        "kanban-board.tsx：拖拽悬停区域背景从 bg-zinc-800/30 border-zinc-700 改为 bg-cyan-500/5 border-cyan-500/20",
-        "保持所有拖拽功能、卡片点击编辑功能正常",
-        "类型检查通过",
+        "设置页读写改为 ~/.ralph/config.json",
+        "新增「通知配置」分组卡片：飞书 Webhook URL 输入框（密码类型可切换显示）；「发送测试消息」按钮调用 API 发送飞书测试通知",
+        "新增 API 路由 POST /api/config/test-webhook — 发送飞书测试消息并返回结果",
+        "新增「容错配置」分组卡片：超时时间（5-120 分钟，默认 30）；连续失败上限（1-20，默认 5）；重试间隔（60-7200 秒，默认 3600）",
+        "新增「环境配置」分组卡片：Git Bash 路径（仅 Windows 显示）；AI 工具选择（claude/amp）；最大迭代次数",
+        "保留现有「界面」分组卡片（终端字体大小）",
+        "移除原有「路径配置」分组",
+        "样式与现有设计统一（渐变左边框、品牌色按钮）",
+        "TypeScript 类型检查通过",
         "使用 dev-browser skill 在浏览器中验证"
       ],
       "priority": 10,
-      "passes": true,
-      "notes": "修改文件：dashboard/src/components/kanban-card.tsx 和 dashboard/src/components/kanban-board.tsx。card-glow 类在 US-001 的 globals.css 中定义。注意保持 @hello-pangea/dnd 的 provided/snapshot API 调用不变。"
+      "passes": false,
+      "notes": "依赖 US-007 的配置模块重构。test-webhook API 使用 fetch POST 飞书 interactive 卡片 JSON。"
     },
     {
       "id": "US-011",
-      "title": "编辑对话框和 Sheet 视觉统一",
-      "description": "作为开发者，我需要统一故事编辑对话框和创建 Sheet 的视觉风格。",
+      "title": "ralph.sh 配置文件集成",
+      "description": "作为系统，我需要 ralph.sh 能从 ~/.ralph/config.json 读取默认参数，以便 Web 控制台的配置调整能生效。",
       "acceptanceCriteria": [
-        "story-edit-dialog.tsx：对话框 DialogTitle 中的 编辑故事 文字使用品牌渐变色 bg-gradient-to-r from-cyan-500 to-blue-500 bg-clip-text text-transparent",
-        "story-edit-dialog.tsx：保存修改按钮使用品牌渐变背景 bg-gradient-to-r from-cyan-600 to-blue-600 text-white",
-        "story-sheet.tsx：SheetTitle 中的标题文字使用品牌渐变色",
-        "story-sheet.tsx：创建故事按钮使用品牌渐变背景",
-        "两个组件中所有 Input/Textarea 的 focus 态统一为品牌色 ring：添加 focus:ring-cyan-500/30 focus:border-cyan-500/50",
-        "添加按钮使用品牌色 hover 效果",
-        "保持所有编辑、创建、保存功能正常",
-        "类型检查通过",
-        "使用 dev-browser skill 在浏览器中验证"
+        "ralph.sh 启动时检查 ~/.ralph/config.json 是否存在",
+        "若存在且 jq 可用，读取以下字段作为默认值：defaultTool→TOOL、defaultMaxIterations→MAX_ITERATIONS、timeoutMinutes→TIMEOUT_MINUTES、maxConsecutiveFailures→MAX_CONSECUTIVE_FAILURES、retryIntervalSeconds→重试秒数、webhookUrl→WEBHOOK_URL、gitBashPath→CLAUDE_CODE_GIT_BASH_PATH",
+        "命令行参数 --timeout、--webhook 等若传入则覆盖配置文件值",
+        "无 jq 时静默跳过配置文件读取（降级为纯命令行参数模式）",
+        "配置文件读取逻辑放在参数解析之后、主循环之前",
+        "bash -n ralph.sh 语法检查通过"
       ],
       "priority": 11,
-      "passes": true,
-      "notes": "修改文件：dashboard/src/components/story-edit-dialog.tsx 和 dashboard/src/components/story-sheet.tsx。这两个组件结构类似，都有标题、表单字段和操作按钮。"
+      "passes": false,
+      "notes": "依赖 US-003 的配置结构定义。jq 命令示例：jq -r '.defaultTool // empty' ~/.ralph/config.json"
+    },
+    {
+      "id": "US-012",
+      "title": "npm 发布构建流程",
+      "description": "作为维护者，我需要完整的构建和发布流程，以便用户 npm install -g claude-ralph 后即可使用。",
+      "acceptanceCriteria": [
+        "根目录 package.json 定义 prepublishOnly 脚本：先 tsc 编译 CLI，再 cd dashboard && npm install && npm run build",
+        "next.config.ts 配置 output: 'standalone' 以减小构建产物体积",
+        "package.json files 字段确保发布包包含：dist/、dashboard/.next/standalone/、dashboard/.next/static/、dashboard/public/、scripts/",
+        "发布包不包含：src/、dashboard/src/、dashboard/node_modules/、.git/、tasks/",
+        "npm pack 后本地 npm install -g ./claude-ralph-x.x.x.tgz 测试通过",
+        "ralph --help 和 ralph --version 在全局安装后正常工作",
+        "TypeScript 类型检查通过"
+      ],
+      "priority": 12,
+      "passes": false,
+      "notes": "这是最后一个故事，依赖前面所有故事。standalone 模式会大幅减小 npm 包体积。"
     }
   ]
 }
