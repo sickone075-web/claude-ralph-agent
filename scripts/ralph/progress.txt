@@ -21,6 +21,9 @@ Started: 2026-03-02
 - Process control API routes under `app/api/ralph/` (start, stop, stdin, status)
 - On Windows, use `bash` to spawn `.sh` scripts; on Unix, spawn script directly
 - Process termination: Windows uses `taskkill /pid /t /f`, Unix uses SIGTERM
+- WebSocket server in `server/ws.ts` runs standalone on port 3001 via `tsx`, imports ralph-process for event piping
+- `npm run dev` uses `concurrently` to run Next.js + WebSocket server together
+- chokidar watches prd.json and progress.txt for file change events broadcast via WebSocket
 ---
 
 ## 2026-03-02 - US-001
@@ -111,4 +114,22 @@ Started: 2026-03-02
   - `execSync("taskkill /pid X /t /f")` for Windows process termination (kills process tree)
   - Event listener pattern (onEvent/emit) enables clean WebSocket integration in US-006
   - Iteration detection via regex on stdout: `/Ralph Iteration (\d+) of (\d+)/`
+---
+
+## 2026-03-02 - US-006
+- Created standalone WebSocket server on port 3001 using `ws` library in `server/ws.ts`
+- Defined event types: ralph:output, ralph:status, ralph:iteration, prd:updated, progress:updated
+- Client can send ralph:stdin event to forward input to Ralph process stdin
+- Uses chokidar to watch prd.json and progress.txt with 500ms debounce, broadcasts prd:updated/progress:updated on change
+- Ralph process stdout/stderr pipes to WebSocket via ralph-process onEvent listener (preserving ANSI sequences)
+- All messages use format: `{ type: string, payload: object, timestamp: string }`
+- Added `concurrently` to package.json: `npm run dev` starts both Next.js dev server and WebSocket server
+- Build and typecheck pass with zero errors
+- Files changed: `server/ws.ts` (new), `package.json`
+- **Learnings for future iterations:**
+  - WebSocket server imports ralph-process singleton directly; since it runs in a separate process via `tsx`, it has its own module state
+  - Use `chokidar` with `awaitWriteFinish` for stable file change detection on Windows
+  - `concurrently` with `--names` and `--prefix-colors` gives clear log output for multiple processes
+  - `tsx` is needed in devDependencies to run TypeScript server files directly
+  - The WS server and Next.js API routes share the same ralph-process module source but run in separate processes - for full integration, API route calls go through Next.js while real-time events flow through WebSocket
 ---

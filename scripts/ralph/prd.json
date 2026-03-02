@@ -108,7 +108,7 @@
         "Typecheck passes"
       ],
       "priority": 6,
-      "passes": false,
+      "passes": true,
       "notes": "WebSocket server imports the ralph-process singleton from US-005 to pipe stdout. Install chokidar and concurrently as dependencies."
     },
     {
