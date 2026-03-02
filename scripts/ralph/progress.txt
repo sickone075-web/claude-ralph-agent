@@ -7,6 +7,9 @@
 - CLI uses Commander.js with ESM imports; version read from package.json via readFileSync (not import assertion)
 - `npm link` at root makes `ralph` command available globally for testing
 - Global config at ~/.ralph/config.json; use src/lib/global-config.ts for read/write; atomic writes use tmp file in same dir (not os.tmpdir) to avoid cross-drive rename failures on Windows
+- Dashboard uses Next.js 16 with tsx for WS server; `next start` for production, standalone mode when available
+- On Windows, use `.cmd` suffixed binaries from node_modules/.bin (next.cmd, tsx.cmd) and set shell: true for spawn
+- Port check: use net.createServer trick to test if port is available before starting servers
 
 # Ralph Progress Log
 Started: 2026年03月 2日 22:51:22
@@ -50,4 +53,25 @@ Started: 2026年03月 2日 22:51:22
   - `execSync('where claude')` on Windows / `which claude` on Unix for CLI detection
   - `platform()` from `node:os` for cross-platform branching (win32 check for Git Bash step)
   - US-005 will continue init.ts with steps 4-8 (feishu, params, project, plugin, completion)
+---
+
+## 2026-03-02 - US-005
+- What was implemented: Init wizard steps 4-8 in src/commands/init.ts. Step 4: Feishu webhook config (optional) with test message via fetch POST interactive card JSON, retry/skip on failure. Step 5: Run parameters (AI tool, max iterations, timeout, max failures) with defaults respecting overwrite/keep mode. Step 6: First project config (name + path validation, sets activeProject). Step 7: Claude Code plugin guidance text. Step 8: Completion summary (tree-formatted config display) and final writeConfig.
+- Files changed: src/commands/init.ts (added ~240 lines for steps 4-8, replaced US-005 placeholder)
+- **Learnings for future iterations:**
+  - Feishu webhook returns `{ code: 0 }` or `{ StatusCode: 0 }` on success — check both
+  - Node 18+ built-in `fetch` works fine for POST requests, no need for external HTTP library
+  - `action` variable ('overwrite'|'keep') from step 0 is threaded through to steps 5-6 to respect existing config values as defaults
+  - Inquirer `type: 'number'` returns number directly, no parsing needed
+---
+
+## 2026-03-02 - US-006
+- What was implemented: Web console start/stop commands. `ralph start` reads config, checks port availability, launches Next.js server (standalone or `next start` fallback) and WebSocket server as child processes, sets RALPH_SCRIPTS_DIR env var, auto-opens browser (unless --no-open), handles Ctrl+C graceful shutdown (taskkill on Windows, SIGTERM on Unix). `ralph stop` finds and kills processes on configured ports. Auto-builds dashboard if .next/ not found.
+- Files changed: src/commands/start.ts (new), src/commands/stop.ts (new), src/bin/ralph.ts (wired start/stop commands with imports and options)
+- **Learnings for future iterations:**
+  - On Windows, child_process.spawn needs shell: true and .cmd binaries from node_modules/.bin
+  - net.createServer listen/error pattern is reliable for port-in-use detection
+  - taskkill /T /F kills the process tree on Windows (important for Next.js which spawns children)
+  - standalone server.js check allows graceful upgrade path when US-012 adds standalone output config
+  - Commander.js `--no-open` auto-creates `opts.open` as boolean (false when flag present)
 ---

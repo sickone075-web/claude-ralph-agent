@@ -90,8 +90,8 @@
         "TypeScript 类型检查通过"
       ],
       "priority": 5,
-      "passes": false,
-      "notes": "依赖 US-004。飞书测试消息使用 Node.js 内置 fetch（Node 18+）。配置摘要用 console.table 或手动格式化。"
+      "passes": true,
+      "notes": "依赖 US-004。飞书测试消息使用 Node.js 内置 fetch（Node 18+）。配置摘要用手动格式化的树形显示。"
     },
     {
       "id": "US-006",
@@ -109,8 +109,8 @@
         "TypeScript 类型检查通过"
       ],
       "priority": 6,
-      "passes": false,
-      "notes": "依赖 US-002 和 US-003。standalone 模式下 Next.js server 是独立的 node 进程。WebSocket server 需要用 tsx 运行（TypeScript）。"
+      "passes": true,
+      "notes": "依赖 US-002 和 US-003。standalone 模式下 Next.js server 是独立的 node 进程。WebSocket server 需要用 tsx 运行（TypeScript）。start 命令支持 standalone 和 next start 两种模式，优先使用 standalone（US-012 配置后生效）。"
     },
     {
       "id": "US-007",

@@ -4,6 +4,8 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import { runInit } from '../commands/init.js';
+import { runStart } from '../commands/start.js';
+import { runStop } from '../commands/stop.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -29,15 +31,16 @@ program
 program
   .command('start')
   .description('启动 Web 控制台')
-  .action(() => {
-    console.log('ralph start - 即将实现');
+  .option('--no-open', '不自动打开浏览器')
+  .action(async (opts) => {
+    await runStart({ open: opts.open });
   });
 
 program
   .command('stop')
   .description('停止 Web 控制台')
-  .action(() => {
-    console.log('ralph stop - 即将实现');
+  .action(async () => {
+    await runStop();
   });
 
 program
