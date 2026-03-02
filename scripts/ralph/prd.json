@@ -1,266 +1,212 @@
 {
   "project": "Ralph Dashboard",
-  "branchName": "ralph/visual-dashboard",
-  "description": "Ralph Visual Dashboard - Web-based kanban dashboard for the Ralph autonomous AI agent loop with real-time monitoring, story management, interactive terminal, and archive browsing",
+  "branchName": "ralph/dashboard-redesign",
+  "description": "Ralph 控制台视觉重设计 - 从 zinc 暗色基调升级为 Vercel/Linear 风格的现代科技感设计，使用青蓝渐变品牌色，Bento Grid 布局，精致微交互动画",
   "userStories": [
     {
       "id": "US-001",
-      "title": "Scaffold Next.js project with shadcn/ui and sidebar layout",
-      "description": "As a developer, I need the Next.js project scaffolded with shadcn/ui, Tailwind CSS, and the sidebar layout so that all subsequent features have a foundation to build on.",
+      "title": "全局 CSS 变量和动画基础设施",
+      "description": "作为开发者，我需要建立统一的 CSS 变量体系和动画工具类，为后续页面重设计提供基础。",
       "acceptanceCriteria": [
-        "Initialize Next.js 14+ App Router project in `dashboard/` directory",
-        "Configure Tailwind CSS + shadcn/ui with dark theme as default",
-        "Create root layout with fixed left sidebar (240px) + right main content area",
-        "Sidebar top: Ralph text logo + project name placeholder area",
-        "Flat navigation menu items with lucide-react icons: Dashboard, Stories, Terminal, Logs, Archives",
-        "Separator line, then Settings at bottom",
-        "Sidebar bottom: Ralph status indicator component (static placeholder, idle state with gray dot)",
-        "Responsive layout: sidebar collapses to hamburger menu on mobile",
-        "Each nav item links to a placeholder page at `app/(dashboard)/*/page.tsx`",
-        "npm run build succeeds with zero TypeScript errors",
-        "Verify in browser using dev-browser skill"
+        "在 globals.css 中添加品牌色 CSS 变量：--brand-cyan（#06B6D4）、--brand-blue（#3B82F6），以及在 .dark 块中保持一致",
+        "添加动画 keyframes：glow（发光脉冲）、shimmer（骨架屏闪烁）、fade-in（淡入）、slide-up（上滑入），使用 @keyframes 定义",
+        "添加工具类：.card-glow（hover 时 box-shadow 出现品牌色微光 + border-color 过渡）、.gradient-border（使用 background linear-gradient + padding 1px 技巧）、.skeleton（animate-pulse + zinc 背景色占位）",
+        "创建 components/skeleton-card.tsx 骨架屏卡片组件，接受 className prop，使用 .skeleton 类",
+        "现有页面不受影响，npm run build 通过",
+        "类型检查通过"
       ],
       "priority": 1,
       "passes": true,
-      "notes": "Use shadcn/ui Sidebar component if available, otherwise build with standard flex layout. Sidebar background zinc-950, selected item zinc-800."
+      "notes": "这是所有后续故事的基础依赖，必须最先完成。品牌渐变使用 Tailwind 的 from-cyan-500 to-blue-500。注意 Tailwind CSS v4 的语法。"
     },
     {
       "id": "US-002",
-      "title": "Add TypeScript types and PRD read API endpoints",
-      "description": "As the dashboard frontend, I need API endpoints to read prd.json so that I can display task status.",
+      "title": "侧边栏视觉升级",
+      "description": "作为用户，我希望侧边栏更具品牌辨识度和交互质感，提升整体专业感。",
       "acceptanceCriteria": [
-        "Create shared TypeScript types in `lib/types.ts`: PRD (project, branchName, description, userStories) and Story (id, title, description, acceptanceCriteria, priority, passes, notes)",
-        "Create config helper in `lib/config.ts` that reads `dashboard/config.json` with defaults (prd path: `../scripts/ralph/prd.json`)",
-        "GET /api/prd returns full prd.json content",
-        "GET /api/prd/stories returns userStories array",
-        "GET /api/prd/stories/[id] returns single story by id",
-        "File not found returns 404 with `{ data: null, error: 'PRD file not found' }`",
-        "All API responses use format `{ data: T | null, error: string | null }`",
-        "Typecheck passes"
+        "Logo 区域 Ralph 文字改为品牌渐变色，使用 bg-gradient-to-r from-cyan-500 to-blue-500 bg-clip-text text-transparent",
+        "选中态导航项左侧添加 2px 品牌渐变条竖线，背景改为 bg-zinc-800/50",
+        "未选中导航项 hover 时背景平滑过渡，添加 transition-colors duration-200",
+        "底部状态指示器区域的顶部 border 改为微妙的品牌渐变色（使用 border-image 或 background-gradient），从 cyan-500 渐变到透明",
+        "移动端 Sheet 侧边栏同步更新上述所有样式",
+        "保持所有导航链接和路由功能正常",
+        "类型检查通过",
+        "使用 dev-browser skill 在浏览器中验证"
       ],
       "priority": 2,
-      "passes": true,
-      "notes": "Use path.resolve for cross-platform path handling. Config file is optional - use defaults when missing."
+      "passes": false,
+      "notes": "修改文件：dashboard/src/components/sidebar.tsx 和 dashboard/src/components/ralph-status-indicator.tsx。侧边栏使用 NavContent 组件同时在桌面和移动端渲染。"
     },
     {
       "id": "US-003",
-      "title": "Add PRD story CRUD API endpoints",
-      "description": "As a user, I want to create, edit, and delete user stories through the dashboard so that I don't need to manually edit JSON files.",
+      "title": "仪表盘首页 Bento Grid 布局重构",
+      "description": "作为用户，我希望仪表盘首页使用 Bento Grid 布局，让信息层次更清晰、视觉更丰富。",
       "acceptanceCriteria": [
-        "POST /api/prd/stories creates new story with auto-incremented ID (US-XXX format based on max existing ID + 1)",
-        "PUT /api/prd/stories/[id] updates story fields: title, description, acceptanceCriteria, priority, passes, notes",
-        "DELETE /api/prd/stories/[id] deletes specified story",
-        "PATCH /api/prd updates project-level fields (project, branchName, description)",
-        "PATCH /api/prd/stories/reorder accepts array of {id, priority} to batch-update priority order",
-        "All write operations use atomic file write (write to .tmp then rename) to prevent corruption",
-        "Input validation: title required on create, returns 400 with `{ data: null, error: 'title is required' }`",
-        "Typecheck passes"
+        "统计区域从 grid-cols-2 md:grid-cols-4 等分改为 Bento Grid：使用 grid-cols-4，左侧项目信息卡片 col-span-2 row-span-2，右侧 4 个统计卡片各占 1 格",
+        "统计卡片添加 card-glow 类实现 hover 发光效果",
+        "完成率圆环进度的 SVG stroke 改为品牌渐变色（使用 SVG linearGradient 从 #06B6D4 到 #3B82F6），替代纯 green-500",
+        "项目名称字号从 text-xl 增大到 text-2xl，状态 Badge 在 running 状态使用品牌渐变背景 bg-gradient-to-r from-cyan-500 to-blue-500",
+        "看板区域保持原有三列，但看板列标题的圆点颜色统一到品牌色系（待处理=amber，进行中=cyan，已完成=green）",
+        "保持所有看板拖拽和故事编辑功能正常",
+        "移动端自动降级为单列布局",
+        "类型检查通过",
+        "使用 dev-browser skill 在浏览器中验证"
       ],
       "priority": 3,
-      "passes": true,
-      "notes": "Use fs.writeFile to temp file then fs.rename for atomic writes. Lock file writes with a simple in-memory mutex to prevent race conditions."
+      "passes": false,
+      "notes": "修改文件：dashboard/src/app/(dashboard)/dashboard/page.tsx。Bento Grid 使用 CSS Grid 实现。圆环进度 SVG 需要添加 <defs><linearGradient> 元素。statusBadge 配置对象需要更新 running 状态的 className。"
     },
     {
       "id": "US-004",
-      "title": "Add progress log and git history API endpoints",
-      "description": "As a user, I want to view the progress log so that I can see what Ralph has learned and done.",
+      "title": "仪表盘骨架屏加载态",
+      "description": "作为用户，我希望仪表盘在数据加载时显示美观的骨架屏占位，而不是空白。",
       "acceptanceCriteria": [
-        "GET /api/logs/progress returns progress.txt parsed into structured array by `---` separator",
-        "Each parsed record contains: date, storyId, summary, filesChanged (string[]), learnings (string[])",
-        "GET /api/logs/git returns last 50 git commits via simple-git (hash, message, date, author)",
-        "File not found returns `{ data: [], error: null }` (empty array, not error)",
-        "Typecheck passes"
+        "当 prd 为 null 时，统计区域显示骨架屏卡片占位（使用 US-001 创建的 skeleton-card 组件），布局与实际卡片一致",
+        "项目名称区域显示骨架屏文字占位条（宽度约 200px，高度约 28px）",
+        "看板区域显示 3 列骨架屏占位（每列 2-3 个骨架卡片）",
+        "骨架屏使用 animate-pulse 动画效果",
+        "数据加载完成后骨架屏平滑替换为实际内容",
+        "类型检查通过",
+        "使用 dev-browser skill 在浏览器中验证"
       ],
       "priority": 4,
-      "passes": true,
-      "notes": "Install simple-git as dependency. Parse progress.txt with regex for ## headers and bullet points."
+      "passes": false,
+      "notes": "修改文件：dashboard/src/app/(dashboard)/dashboard/page.tsx。在 DashboardPage 组件开头添加 if (!prd) return <骨架屏布局> 条件渲染。"
     },
     {
       "id": "US-005",
-      "title": "Add Ralph process control API endpoints",
-      "description": "As a user, I want to start and stop Ralph from the dashboard so that I don't need to switch to the terminal.",
+      "title": "用户故事页视觉优化",
+      "description": "作为用户，我希望故事列表页有更好的视觉层次和交互反馈。",
       "acceptanceCriteria": [
-        "Create process manager singleton in `lib/ralph-process.ts` using child_process.spawn",
-        "POST /api/ralph/start spawns ralph.sh with params from body: `{ tool: 'claude' | 'amp', maxIterations: number }`",
-        "POST /api/ralph/stop terminates running Ralph process (Windows: taskkill /pid /t /f, Unix: SIGTERM)",
-        "POST /api/ralph/stdin sends input string to Ralph process stdin: `{ input: string }`",
-        "GET /api/ralph/status returns `{ status: 'idle'|'running'|'completed'|'error', iteration: number, startedAt: string|null }`",
-        "Duplicate start returns 409 `{ data: null, error: 'Ralph is already running' }`",
-        "Process exit automatically cleans up reference and updates status to idle or error",
-        "Typecheck passes"
+        "页面标题 User Stories 旁添加故事总数 Badge，使用品牌渐变背景 bg-gradient-to-r from-cyan-500 to-blue-500 text-white",
+        "故事列表每个卡片添加 card-glow 类实现 hover 发光效果",
+        "优先级标签改为渐变背景：高=bg-gradient-to-r from-red-500/20 to-red-400/10、中=from-amber-500/20 to-amber-400/10、低=from-zinc-500/20 to-zinc-400/10",
+        "拖拽时的阴影效果增强为 ring-cyan-500/20 品牌色 ring",
+        "通过/未通过图标添加 transition-all duration-200 过渡动画",
+        "空状态添加 BookOpen 图标（64px 大小 + 品牌渐变色）和更友好的文案",
+        "删除确认对话框的删除按钮添加 hover 过渡效果",
+        "保持拖拽排序、CRUD、通过状态切换功能正常",
+        "类型检查通过",
+        "使用 dev-browser skill 在浏览器中验证"
       ],
       "priority": 5,
-      "passes": true,
-      "notes": "Store process reference and status in module-level singleton. Detect iteration number by parsing stdout for 'Ralph Iteration X of Y' pattern."
+      "passes": false,
+      "notes": "修改文件：dashboard/src/app/(dashboard)/stories/page.tsx。getPriorityTag 函数需要更新返回的 className。空状态目前是纯文字 div。"
     },
     {
       "id": "US-006",
-      "title": "Add WebSocket real-time communication server",
-      "description": "As a user, I want the dashboard to update in real-time so that I can see Ralph's progress without refreshing.",
+      "title": "终端页布局和工具栏优化",
+      "description": "作为用户，我希望终端页的工具栏更整洁、状态展示更直观。",
       "acceptanceCriteria": [
-        "Create standalone WebSocket server on port 3001 using `ws` library in `server/ws.ts`",
-        "Define event types: ralph:output, ralph:status, ralph:iteration, prd:updated, progress:updated",
-        "Client can send ralph:stdin event to forward input to Ralph process stdin",
-        "Use chokidar to watch prd.json and progress.txt, debounce 500ms, broadcast prd:updated/progress:updated on change",
-        "Ralph process stdout/stderr pipes to WebSocket as ralph:output events (preserving ANSI sequences)",
-        "All messages use format: `{ type: string, payload: object, timestamp: string }`",
-        "Add `concurrently` to package.json: `npm run dev` starts both Next.js dev server and WebSocket server",
-        "Typecheck passes"
+        "顶部工具栏改为两行结构：第一行放标题+WebSocket状态+运行状态Badge+迭代进度+耗时，第二行放AI工具选择器+迭代次数选择器+启动/停止按钮",
+        "运行中状态 Badge 使用品牌渐变背景 bg-gradient-to-r from-cyan-500 to-blue-500 替代纯绿色",
+        "标签栏下方添加 1-2px 高度的迭代进度条，使用品牌渐变色，宽度为 iteration/totalIterations 百分比",
+        "完成摘要条背景改为品牌渐变半透明 bg-gradient-to-r from-cyan-950/30 to-blue-950/30",
+        "实时标签旁的运行指示圆点改为品牌色 bg-cyan-500",
+        "启动按钮使用品牌渐变背景 bg-gradient-to-r from-cyan-600 to-blue-600，hover 时发光",
+        "工具栏按钮（清除/滚动/下载）已有 title 属性作为 tooltip",
+        "保持终端渲染、WebSocket 通信、键盘输入、标签切换功能正常",
+        "类型检查通过",
+        "使用 dev-browser skill 在浏览器中验证"
       ],
       "priority": 6,
-      "passes": true,
-      "notes": "WebSocket server imports the ralph-process singleton from US-005 to pipe stdout. Install chokidar and concurrently as dependencies."
+      "passes": false,
+      "notes": "修改文件：dashboard/src/app/(dashboard)/terminal/page.tsx。工具栏已经使用 flex-wrap，需要改为两个独立的 flex 行。进度条可以用一个绝对定位的 div 在标签栏下方。注意不要破坏 xterm.js 终端的高度计算。"
     },
     {
       "id": "US-007",
-      "title": "Add WebSocket hooks and global state management",
-      "description": "As a developer, I need shared WebSocket hooks and a global state store so that all pages can access real-time data consistently.",
+      "title": "日志页时间线和搜索增强",
+      "description": "作为用户，我希望日志页的时间线更美观、搜索体验更好。",
       "acceptanceCriteria": [
-        "Create `useWebSocket` hook in `hooks/use-websocket.ts`: manages connection to ws://localhost:3001, auto-reconnect with exponential backoff (1s, 2s, 4s, 8s, 16s, max 30s), event subscribe/unsubscribe",
-        "Create `useRalphStatus` hook: returns Ralph status (idle/running/completed/error), current iteration number, elapsed time",
-        "Create `usePrd` hook: returns PRD data, auto-refreshes on prd:updated WebSocket event",
-        "Use Zustand store in `lib/store.ts` for global state: Ralph status + PRD data + WebSocket connection state",
-        "Sidebar status indicator component reads from Zustand store and displays correct color/animation",
-        "Typecheck passes"
+        "时间线竖线从 bg-zinc-800 改为品牌渐变色，使用 background: linear-gradient(to bottom, #06B6D4, #3B82F6, transparent)",
+        "时间线节点圆点添加品牌色外发光效果，使用 box-shadow: 0 0 6px rgba(6, 182, 212, 0.4)",
+        "搜索框获得焦点时显示品牌色边框 focus:ring-cyan-500/50 focus:border-cyan-500/50",
+        "代码库模式卡片使用 gradient-border 类实现品牌渐变边框",
+        "学习记录区域保持紫色主题但添加微光效果（hover 时 box-shadow 增加紫色光晕）",
+        "空状态文字前添加 ScrollText 图标装饰（品牌渐变色）",
+        "Git 提交列表中 Ralph 标签改为品牌渐变色 bg-gradient-to-r from-cyan-600 to-blue-600",
+        "日期格式保持 zh-CN 本地化",
+        "保持搜索过滤、WebSocket 实时更新功能正常",
+        "类型检查通过",
+        "使用 dev-browser skill 在浏览器中验证"
       ],
       "priority": 7,
-      "passes": true,
-      "notes": "Install zustand. Hooks should be client components ('use client'). WebSocket connection is established once at app level and shared via store."
+      "passes": false,
+      "notes": "修改文件：dashboard/src/app/(dashboard)/logs/page.tsx。时间线竖线是 absolute 定位的 div，圆点也是 absolute 定位。gradient-border 类在 US-001 中定义。"
     },
     {
       "id": "US-008",
-      "title": "Build Dashboard kanban overview page",
-      "description": "As a user, I want a kanban-style dashboard showing task completion status at a glance with three columns.",
+      "title": "归档页展开动画和空状态优化",
+      "description": "作为用户，我希望归档页有更好的展开/收起体验和更友好的空状态。",
       "acceptanceCriteria": [
-        "Page top info bar: project name, branch name, project description, Ralph status indicator (linked to global state)",
-        "Stats card row: total tasks, completed count, pending count, completion percentage with circular progress ring",
-        "Three-column kanban layout: Pending (passes=false, not current) / In Progress (story Ralph is currently working on) / Completed (passes=true)",
-        "Kanban cards show: ID badge, title text, priority color left-border (high=red-500, medium=amber-500, low=zinc-500), passes status icon",
-        "Click card opens shadcn/ui Dialog with full story details and edit form",
-        "Drag-and-drop cards between columns using @hello-pangea/dnd: dropping to Completed sets passes=true, dropping out sets passes=false",
-        "In Progress column card shows loading animation when Ralph is running",
-        "Data auto-refreshes via WebSocket prd:updated events",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
+        "归档项展开/收起使用 CSS grid-rows 动画（grid-template-rows: 0fr → 1fr + transition-all duration-300）或条件渲染配合 animate-fade-in 类",
+        "归档项 hover 时左侧显示 2px 品牌渐变边框，类似侧边栏选中态效果",
+        "进度条颜色从 bg-green-600 改为品牌渐变色 bg-gradient-to-r from-cyan-500 to-blue-500",
+        "空状态 Archive 图标放大到 h-16 w-16，使用品牌渐变色（bg-clip-text text-transparent），文案改为更友好的中文",
+        "归档详情中的只读看板继承全局品牌色系更新（列标题圆点颜色等）",
+        "保持归档列表加载、详情展示、展开/收起功能正常",
+        "类型检查通过",
+        "使用 dev-browser skill 在浏览器中验证"
       ],
       "priority": 8,
-      "passes": true,
-      "notes": "Install @hello-pangea/dnd. In Progress detection: compare current iteration story ID from Ralph status. Columns are equal width with 8px card gap."
+      "passes": false,
+      "notes": "修改文件：dashboard/src/app/(dashboard)/archives/page.tsx。展开动画推荐使用 CSS grid-template-rows 技巧：外层 div 设置 grid + transition，内层 div overflow-hidden。空状态的 FolderOpen 图标可以改为 Archive 图标。"
     },
     {
       "id": "US-009",
-      "title": "Build user story management page",
-      "description": "As a user, I want a dedicated page to manage all user stories with full CRUD operations.",
+      "title": "设置页表单分组和反馈优化",
+      "description": "作为用户，我希望设置页的表单更美观、保存反馈更明确。",
       "acceptanceCriteria": [
-        "Page header: title 'User Stories' + 'New Story' button",
-        "Card list displays all stories, each card shows: ID badge, title, priority tag (color-coded), passes toggle switch",
-        "New Story button opens shadcn/ui Sheet (slide-over panel) with form: title (required), description (textarea), acceptanceCriteria (dynamic add/remove rows), priority (Select: high/medium/low)",
-        "Click card opens Sheet in edit mode with all fields populated and editable",
-        "Delete button triggers shadcn/ui AlertDialog confirmation before deletion",
-        "Toggle passes directly on card without opening details",
-        "Drag-to-reorder cards to adjust priority (auto-calls reorder API on drop)",
-        "All operations write to prd.json immediately and sync via WebSocket",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
+        "每个设置分组 Card 标题左侧添加 3px 宽品牌渐变竖线装饰（使用 border-left + border-image: linear-gradient）",
+        "所有 Input 输入框 focus 态添加品牌色 ring：focus:ring-cyan-500/30 focus:border-cyan-500/50",
+        "Slider 滑块轨道使用品牌渐变色（修改 Slider 的 range 样式为 bg-gradient-to-r from-cyan-500 to-blue-500）",
+        "保存按钮使用品牌渐变背景 bg-gradient-to-r from-cyan-600 to-blue-600，hover 时添加 card-glow 发光效果",
+        "恢复默认按钮保持 outline 样式但添加 transition-all duration-200 hover 过渡",
+        "加载态从纯文字改为骨架屏布局（使用 skeleton-card 组件模拟 3 个 Card 占位）",
+        "保存成功 Toast 正常触发（sonner toast 样式不需要修改）",
+        "保持配置读取、保存、重置功能正常",
+        "类型检查通过",
+        "使用 dev-browser skill 在浏览器中验证"
       ],
       "priority": 9,
-      "passes": true,
-      "notes": "Reuse @hello-pangea/dnd from US-008 for drag sorting. Sheet component from shadcn/ui for side panel."
+      "passes": false,
+      "notes": "修改文件：dashboard/src/app/(dashboard)/settings/page.tsx。Slider 组件在 components/ui/slider.tsx，可能需要修改其内部样式或通过 className 覆盖。border-image 兼容性良好。"
     },
     {
       "id": "US-010",
-      "title": "Build interactive terminal page with xterm.js and real-time streaming",
-      "description": "As a user, I want a terminal page to see Ralph's real-time output and send input to the Ralph process.",
+      "title": "看板卡片和看板面板视觉升级",
+      "description": "作为开发者，我需要统一看板卡片和看板面板的视觉风格，使其与新设计语言一致。",
       "acceptanceCriteria": [
-        "Install xterm, xterm-addon-fit, xterm-addon-web-links as dependencies",
-        "Create Terminal component using next/dynamic with ssr:false to avoid SSR errors",
-        "Terminal styling: dark background (#1a1a2e), JetBrains Mono font, full ANSI color/bold/underline rendering",
-        "Real-time mode: when Ralph is running, stream stdout/stderr via WebSocket ralph:output events into xterm",
-        "Input capability: keyboard input in terminal sends text via WebSocket ralph:stdin to Ralph process stdin",
-        "Page top bar: Ralph status badge, current iteration number, elapsed time timer",
-        "Quick start/stop buttons at top (calls /api/ralph/start and /api/ralph/stop)",
-        "When Ralph is not running, terminal shows welcome message with start instructions",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
+        "kanban-card.tsx：卡片添加 card-glow 类实现 hover 发光效果",
+        "kanban-card.tsx：拖拽态从 shadow-lg shadow-black/50 ring-1 ring-zinc-700 改为 shadow-lg shadow-cyan-500/10 ring-1 ring-cyan-500/30",
+        "kanban-board.tsx：进行中列标题圆点从 bg-blue-500 改为 bg-cyan-500 品牌色",
+        "kanban-board.tsx：拖拽悬停区域背景从 bg-zinc-800/30 border-zinc-700 改为 bg-cyan-500/5 border-cyan-500/20",
+        "保持所有拖拽功能、卡片点击编辑功能正常",
+        "类型检查通过",
+        "使用 dev-browser skill 在浏览器中验证"
       ],
       "priority": 10,
-      "passes": true,
-      "notes": "xterm.js must be dynamically imported to avoid SSR issues. Use xterm-addon-fit for responsive terminal sizing."
+      "passes": false,
+      "notes": "修改文件：dashboard/src/components/kanban-card.tsx 和 dashboard/src/components/kanban-board.tsx。card-glow 类在 US-001 的 globals.css 中定义。注意保持 @hello-pangea/dnd 的 provided/snapshot API 调用不变。"
     },
     {
       "id": "US-011",
-      "title": "Add terminal history mode with iteration tabs and toolbar",
-      "description": "As a user, I want to review historical iteration outputs and have toolbar controls for the terminal.",
+      "title": "编辑对话框和 Sheet 视觉统一",
+      "description": "作为开发者，我需要统一故事编辑对话框和创建 Sheet 的视觉风格。",
       "acceptanceCriteria": [
-        "Tab bar above terminal: 'Live' tab + per-iteration tabs ('Iteration 1', 'Iteration 2', etc.)",
-        "Iteration tabs auto-created when ralph:iteration events are received, output stored in frontend memory per iteration",
-        "Clicking iteration tab loads that iteration's buffered output into a read-only xterm instance",
-        "Live tab shows current real-time stream (default when Ralph is running)",
-        "Toolbar buttons: Clear output, Pause/Resume auto-scroll toggle, Download current output as .log file",
-        "After Ralph completes, show summary: stories completed count, total elapsed time",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
+        "story-edit-dialog.tsx：对话框 DialogTitle 中的 编辑故事 文字使用品牌渐变色 bg-gradient-to-r from-cyan-500 to-blue-500 bg-clip-text text-transparent",
+        "story-edit-dialog.tsx：保存修改按钮使用品牌渐变背景 bg-gradient-to-r from-cyan-600 to-blue-600 text-white",
+        "story-sheet.tsx：SheetTitle 中的标题文字使用品牌渐变色",
+        "story-sheet.tsx：创建故事按钮使用品牌渐变背景",
+        "两个组件中所有 Input/Textarea 的 focus 态统一为品牌色 ring：添加 focus:ring-cyan-500/30 focus:border-cyan-500/50",
+        "添加按钮使用品牌色 hover 效果",
+        "保持所有编辑、创建、保存功能正常",
+        "类型检查通过",
+        "使用 dev-browser skill 在浏览器中验证"
       ],
       "priority": 11,
-      "passes": true,
-      "notes": "Detect iteration boundaries by parsing 'Ralph Iteration X of Y' pattern in output stream. Store iteration buffers in Zustand or component state."
-    },
-    {
-      "id": "US-012",
-      "title": "Build iteration logs page with progress timeline and git history",
-      "description": "As a user, I want to view Ralph's iteration logs and git history so that I can understand what was done and learned.",
-      "acceptanceCriteria": [
-        "Top tab navigation using shadcn/ui Tabs: Progress Log / Git History",
-        "Progress Log tab: timeline layout, each entry shows date, Story ID (clickable link to /stories), implementation summary, changed files (code-styled tags)",
-        "Learnings section highlighted with distinct background (dark purple card)",
-        "Codebase Patterns section pinned at top if present in progress.txt",
-        "Git History tab: list of commits showing short hash (monospace), message, date, author",
-        "Ralph commits (starting with 'feat:') marked with special badge",
-        "Search input filters log entries and commits by keyword",
-        "Real-time: new entries prepend to top with fade-in animation when progress:updated event received",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
-      ],
-      "priority": 12,
-      "passes": true,
-      "notes": "Use shadcn/ui Badge for tags and status indicators. Timeline can use a simple vertical line + dot pattern with Tailwind."
-    },
-    {
-      "id": "US-013",
-      "title": "Build archive browsing page with read-only views",
-      "description": "As a user, I want to browse archived Ralph runs so that I can review previous feature development history.",
-      "acceptanceCriteria": [
-        "GET /api/archives scans scripts/ralph/archive/ directory, returns list of archive folders (date + feature name)",
-        "GET /api/archives/[folder] returns archived prd.json and progress.txt contents",
-        "Page displays archive list: each item shows date, branch/feature name, story completion stats (e.g. '3/4 completed')",
-        "Click archive item expands details: read-only kanban view (reuse kanban components from US-008) + read-only log view",
-        "Empty state shown when no archives exist",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
-      ],
-      "priority": 13,
-      "passes": true,
-      "notes": "Reuse KanbanBoard component from US-008 with a readOnly prop that disables drag-and-drop and edit actions."
-    },
-    {
-      "id": "US-014",
-      "title": "Build settings page with configuration form",
-      "description": "As a user, I want to configure dashboard and Ralph settings.",
-      "acceptanceCriteria": [
-        "Settings form built with shadcn/ui Form components",
-        "Path Configuration group: Ralph script path (default ../scripts/ralph/ralph.sh), PRD file path (default ../scripts/ralph/prd.json), Progress file path (default ../scripts/ralph/progress.txt)",
-        "Default Parameters group: default AI tool select (Claude/Amp dropdown), default max iterations (number input, default 10)",
-        "Interface group: terminal font size slider (12-24px)",
-        "Save button writes config to dashboard/config.json via POST /api/config",
-        "Reset to Defaults button restores all fields to default values",
-        "Page loads config from GET /api/config on mount, uses defaults when config.json missing",
-        "Save success shows shadcn/ui Toast notification",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
-      ],
-      "priority": 14,
-      "passes": true,
-      "notes": "Add GET /api/config and POST /api/config endpoints. Config file is dashboard/config.json."
+      "passes": false,
+      "notes": "修改文件：dashboard/src/components/story-edit-dialog.tsx 和 dashboard/src/components/story-sheet.tsx。这两个组件结构类似，都有标题、表单字段和操作按钮。"
     }
   ]
 }

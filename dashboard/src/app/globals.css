@@ -126,3 +126,93 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Brand color CSS variables */
+:root {
+  --brand-cyan: #06B6D4;
+  --brand-blue: #3B82F6;
+}
+
+.dark {
+  --brand-cyan: #06B6D4;
+  --brand-blue: #3B82F6;
+}
+
+/* Animation keyframes */
+@keyframes glow {
+  0%, 100% {
+    box-shadow: 0 0 4px rgba(6, 182, 212, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 12px rgba(6, 182, 212, 0.4);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Utility classes */
+.card-glow {
+  transition: box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.card-glow:hover {
+  box-shadow: 0 0 12px rgba(6, 182, 212, 0.15), 0 0 4px rgba(59, 130, 246, 0.1);
+  border-color: rgba(6, 182, 212, 0.3);
+}
+
+.gradient-border {
+  position: relative;
+  background: linear-gradient(var(--card), var(--card)) padding-box,
+              linear-gradient(to right, #06B6D4, #3B82F6) border-box;
+  border: 1px solid transparent;
+}
+
+.skeleton {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  background-color: oklch(0.269 0 0);
+  border-radius: var(--radius);
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out;
+}
