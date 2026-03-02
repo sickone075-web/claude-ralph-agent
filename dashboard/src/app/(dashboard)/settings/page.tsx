@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/components/ui/slider";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
+import { SkeletonCard } from "@/components/skeleton-card";
 
 interface SettingsConfig {
   prdPath: string;
@@ -62,13 +63,13 @@ export default function SettingsPage() {
       });
       const json = await res.json();
       if (json.error) {
-        toast.error("Failed to save settings", { description: json.error });
+        toast.error("保存设置失败", { description: json.error });
       } else {
         setConfig(json.data);
-        toast.success("Settings saved successfully");
+        toast.success("设置已保存");
       }
     } catch {
-      toast.error("Failed to save settings");
+      toast.error("保存设置失败");
     } finally {
       setSaving(false);
     }
@@ -81,10 +82,10 @@ export default function SettingsPage() {
       const json = await res.json();
       if (json.data) {
         setConfig(json.data);
-        toast.success("Settings reset to defaults");
+        toast.success("设置已恢复默认");
       }
     } catch {
-      toast.error("Failed to reset settings");
+      toast.error("恢复默认设置失败");
     } finally {
       setSaving(false);
     }
@@ -92,12 +93,16 @@ export default function SettingsPage() {
 
   if (loading) {
     return (
-      <div className="p-6">
-        <div className="flex items-center gap-2 mb-4">
+      <div className="p-6 max-w-2xl">
+        <div className="flex items-center gap-2 mb-6">
           <Settings className="h-5 w-5 text-zinc-400" />
-          <h2 className="text-xl font-semibold">Settings</h2>
+          <h2 className="text-xl font-semibold">设置</h2>
         </div>
-        <p className="text-zinc-400">Loading configuration...</p>
+        <div className="space-y-6">
+          <SkeletonCard className="h-64" />
+          <SkeletonCard className="h-48" />
+          <SkeletonCard className="h-36" />
+        </div>
       </div>
     );
   }
@@ -107,57 +112,57 @@ export default function SettingsPage() {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
           <Settings className="h-5 w-5 text-zinc-400" />
-          <h2 className="text-xl font-semibold">Settings</h2>
+          <h2 className="text-xl font-semibold">设置</h2>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={handleReset} disabled={saving}>
+          <Button variant="outline" size="sm" onClick={handleReset} disabled={saving} className="transition-all duration-200">
             <RotateCcw className="h-4 w-4 mr-1" />
-            Reset to Defaults
+            恢复默认
           </Button>
-          <Button size="sm" onClick={handleSave} disabled={saving}>
+          <Button size="sm" onClick={handleSave} disabled={saving} className="bg-gradient-to-r from-cyan-600 to-blue-600 text-white border-0 card-glow">
             <Save className="h-4 w-4 mr-1" />
-            {saving ? "Saving..." : "Save"}
+            {saving ? "保存中..." : "保存"}
           </Button>
         </div>
       </div>
 
       <div className="space-y-6">
         {/* Path Configuration */}
-        <Card className="p-4 bg-zinc-900 border-zinc-800">
-          <h3 className="text-sm font-medium text-zinc-300 mb-4">Path Configuration</h3>
+        <Card className="p-4 bg-zinc-900 border-zinc-800" style={{ borderLeft: '3px solid transparent', borderImage: 'linear-gradient(to bottom, #06B6D4, #3B82F6) 1', borderImageSlice: 1 }}>
+          <h3 className="text-sm font-medium text-zinc-300 mb-4">路径配置</h3>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="ralphScriptPath">Ralph Script Path</Label>
+              <Label htmlFor="ralphScriptPath">Ralph 脚本路径</Label>
               <Input
                 id="ralphScriptPath"
                 value={config.ralphScriptPath}
                 onChange={(e) => setConfig({ ...config, ralphScriptPath: e.target.value })}
                 placeholder="../scripts/ralph/ralph.sh"
-                className="bg-zinc-950 border-zinc-700"
+                className="bg-zinc-950 border-zinc-700 focus:ring-cyan-500/30 focus:border-cyan-500/50"
               />
-              <p className="text-xs text-zinc-500">Path to the ralph.sh script</p>
+              <p className="text-xs text-zinc-500">ralph.sh 脚本的路径</p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="prdPath">PRD File Path</Label>
+              <Label htmlFor="prdPath">PRD 文件路径</Label>
               <Input
                 id="prdPath"
                 value={config.prdPath}
                 onChange={(e) => setConfig({ ...config, prdPath: e.target.value })}
                 placeholder="../scripts/ralph/prd.json"
-                className="bg-zinc-950 border-zinc-700"
+                className="bg-zinc-950 border-zinc-700 focus:ring-cyan-500/30 focus:border-cyan-500/50"
               />
-              <p className="text-xs text-zinc-500">Path to the prd.json file</p>
+              <p className="text-xs text-zinc-500">prd.json 文件的路径</p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="progressPath">Progress File Path</Label>
+              <Label htmlFor="progressPath">进度文件路径</Label>
               <Input
                 id="progressPath"
                 value={config.progressPath}
                 onChange={(e) => setConfig({ ...config, progressPath: e.target.value })}
                 placeholder="../scripts/ralph/progress.txt"
-                className="bg-zinc-950 border-zinc-700"
+                className="bg-zinc-950 border-zinc-700 focus:ring-cyan-500/30 focus:border-cyan-500/50"
               />
-              <p className="text-xs text-zinc-500">Path to the progress.txt file</p>
+              <p className="text-xs text-zinc-500">progress.txt 文件的路径</p>
             </div>
           </div>
         </Card>
@@ -165,11 +170,11 @@ export default function SettingsPage() {
         <Separator className="bg-zinc-800" />
 
         {/* Default Parameters */}
-        <Card className="p-4 bg-zinc-900 border-zinc-800">
-          <h3 className="text-sm font-medium text-zinc-300 mb-4">Default Parameters</h3>
+        <Card className="p-4 bg-zinc-900 border-zinc-800" style={{ borderLeft: '3px solid transparent', borderImage: 'linear-gradient(to bottom, #06B6D4, #3B82F6) 1', borderImageSlice: 1 }}>
+          <h3 className="text-sm font-medium text-zinc-300 mb-4">默认参数</h3>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="defaultTool">Default AI Tool</Label>
+              <Label htmlFor="defaultTool">默认 AI 工具</Label>
               <Select
                 value={config.defaultTool}
                 onValueChange={(value: "claude" | "amp") => setConfig({ ...config, defaultTool: value })}
@@ -182,10 +187,10 @@ export default function SettingsPage() {
                   <SelectItem value="amp">Amp</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-zinc-500">AI tool used when starting Ralph</p>
+              <p className="text-xs text-zinc-500">启动 Ralph 时使用的 AI 工具</p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="defaultMaxIterations">Default Max Iterations</Label>
+              <Label htmlFor="defaultMaxIterations">默认最大迭代次数</Label>
               <Input
                 id="defaultMaxIterations"
                 type="number"
@@ -193,9 +198,9 @@ export default function SettingsPage() {
                 max={100}
                 value={config.defaultMaxIterations}
                 onChange={(e) => setConfig({ ...config, defaultMaxIterations: parseInt(e.target.value) || 10 })}
-                className="bg-zinc-950 border-zinc-700 w-32"
+                className="bg-zinc-950 border-zinc-700 w-32 focus:ring-cyan-500/30 focus:border-cyan-500/50"
               />
-              <p className="text-xs text-zinc-500">Maximum iterations per Ralph run (default: 10)</p>
+              <p className="text-xs text-zinc-500">每次 Ralph 运行的最大迭代次数（默认：10）</p>
             </div>
           </div>
         </Card>
@@ -203,12 +208,12 @@ export default function SettingsPage() {
         <Separator className="bg-zinc-800" />
 
         {/* Interface */}
-        <Card className="p-4 bg-zinc-900 border-zinc-800">
-          <h3 className="text-sm font-medium text-zinc-300 mb-4">Interface</h3>
+        <Card className="p-4 bg-zinc-900 border-zinc-800" style={{ borderLeft: '3px solid transparent', borderImage: 'linear-gradient(to bottom, #06B6D4, #3B82F6) 1', borderImageSlice: 1 }}>
+          <h3 className="text-sm font-medium text-zinc-300 mb-4">界面</h3>
           <div className="space-y-4">
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <Label htmlFor="terminalFontSize">Terminal Font Size</Label>
+                <Label htmlFor="terminalFontSize">终端字体大小</Label>
                 <span className="text-sm text-zinc-400 font-mono">{config.terminalFontSize}px</span>
               </div>
               <Slider
