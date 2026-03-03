@@ -12,6 +12,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { KanbanBoard } from "@/components/kanban-board";
 import { SkeletonCard } from "@/components/skeleton-card";
+import { RepoOverviewCards } from "@/components/repo-overview-cards";
 import { useDashboardStore } from "@/lib/store";
 import type { RalphStatus } from "@/lib/store";
 import type { Story } from "@/lib/types";
@@ -254,6 +255,9 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Repo Overview Cards (multi-repo only) */}
+      <RepoOverviewCards />
 
       {/* Kanban Board */}
       <KanbanBoard

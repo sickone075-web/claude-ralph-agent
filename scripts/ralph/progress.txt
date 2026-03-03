@@ -169,3 +169,120 @@ Started: 2026年03月 2日 22:51:22
   - docs repos default priority to 0, others to 1 — matches US-007 execution ordering (lower runs first)
   - Empty checks input is filtered out with `.filter(Boolean)` after split/trim
 ---
+
+## 2026-03-03 - US-003 (multi-repo-support)
+- What was implemented: `ralph remove-repo` CLI command for interactively removing repository configurations from the active project
+- Files changed:
+  - src/commands/remove-repo.ts (new) - Interactive prompts to select repo, show details, confirm deletion
+  - src/bin/ralph.ts - Imported and registered remove-repo command
+- **Learnings for future iterations:**
+  - Follow add-repo.ts pattern but inverse: read config, list repos, confirm, delete, write config
+  - `delete repos[name]` removes a key from Record; `delete project.repositories` removes field when empty
+  - When repositories becomes empty object after deletion, clean up by removing the field entirely (matches AC)
+  - Inquirer `type: 'confirm'` with `default: false` prevents accidental deletion
+---
+
+## 2026-03-03 - US-004 (multi-repo-support)
+- What was implemented: Added `stepRepositories` step to init.ts wizard between stepFirstProject and stepPluginGuide. Asks if project is multi-repo, then loops to add repos with same input fields as add-repo.ts (name, path, type, priority, checks). Updated stepCompletion to display repository list in config summary.
+- Files changed:
+  - src/commands/init.ts - Added RepoConfig import, REPO_TYPES const, stepRepositories function (~100 lines), updated stepCompletion with repo display, inserted step call in runInit flow
+- **Learnings for future iterations:**
+  - Reused same prompt structure as add-repo.ts but inline (no function extraction needed since patterns are simple)
+  - stepRepositories checks for activeProject existence before running — if no project was added, step is skipped
+  - `project.repositories!` non-null assertion is safe after the `if (!project.repositories)` guard
+  - Step numbering shifted: plugin guide is now step 8, completion is step 9
+---
+
+## 2026-03-03 - US-005 (multi-repo-support)
+- What was implemented: Created `scripts/ralph/CLAUDE-docs.md` — a documentation-repository-specific agent template based on CLAUDE.md
+- Files changed:
+  - scripts/ralph/CLAUDE-docs.md (new) - Documentation agent instructions with API contract, technical design, and architecture doc focus
+- **Learnings for future iterations:**
+  - CLAUDE-docs.md mirrors CLAUDE.md structure (task flow, progress report, codebase patterns, stop condition) but adapts content for docs repos
+  - Key differences from CLAUDE.md: commit prefix is `docs:` instead of `feat:`, quality checks are markdown/structure-based instead of typecheck/lint, documentation focus section replaces coding focus
+  - The template includes a "Reading Other Repositories" section to guide docs agents on cross-repo reads via absolute paths
+  - US-006 will use this template: ralph.sh selects CLAUDE-docs.md when repo type=docs
+---
+
+## 2026-03-03 - US-006 (multi-repo-support)
+- What was implemented: Modified ralph.sh to auto-detect which repo the current working directory belongs to (by matching pwd against active project's repositories paths), inject sibling repo info into the claude prompt, and select the appropriate template (CLAUDE.md vs CLAUDE-docs.md) based on repo type
+- Files changed:
+  - scripts/ralph/ralph.sh - Added repo context detection block (~65 lines after config reading), template selection logic in main loop, modified claude invocation to support piping combined content
+- Key behaviors:
+  - Matches `pwd -P` against repo paths in active project's repositories config
+  - Generates markdown table of all sibling repos (name, type, path) as injection block
+  - Specially marks type=docs repos with Read tool guidance
+  - Selects CLAUDE-docs.md for docs repos, CLAUDE.md for all others
+  - Checks for repo-local templates at `{repo_path}/scripts/ralph/CLAUDE.md` (or CLAUDE-docs.md)
+  - Uses `{ cat template; printf inject; } | claude --print` for injection (doesn't modify template files)
+  - Single-repo projects (no repositories config) have unchanged behavior
+- **Learnings for future iterations:**
+  - `pwd -P` resolves symlinks for reliable path comparison across platforms
+  - `cd "$path" 2>/dev/null && pwd -P` normalizes paths (handles Windows/MSYS differences)
+  - jq `--arg` with nested selects works for extracting project-specific repo data
+  - The injection block is built once before the loop but template selection happens per-iteration (allows future dynamic changes)
+  - Using `printf '%s'` instead of `echo` avoids unwanted newline interpretation in the inject block
+---
+
+## 2026-03-03 - US-007 (multi-repo-support)
+- What was implemented: `ralph run-all` command for orchestrating multi-repo ralph loops by priority. Reads active project's repositories config, groups by priority, runs same-priority repos in parallel via Promise.all, waits for each priority stage to complete before starting the next. Each repo gets its own labeled output prefix. Includes fallback to single-repo mode when no repositories configured. Also includes --repo and --type filter options (US-008 acceptance criteria).
+- Files changed:
+  - src/commands/run-all.ts (new) - Full multi-repo orchestration with priority-based staging, parallel execution, summary report
+  - src/bin/ralph.ts - Imported and registered run-all command with --repo and --type options
+- **Learnings for future iterations:**
+  - Promise.all with per-repo spawn Promises enables parallel execution within a priority group
+  - findRalphScript checks repo-local scripts/ralph/ralph.sh first, then falls back to global
+  - Priority groups sorted ascending (0 runs before 1) — docs repos with priority 0 run first
+  - Each child process stdout/stderr is prefixed with `[repoName]` for clear log separation
+  - Single-repo fallback uses stdio: 'inherit' for direct passthrough (no prefix needed)
+  - US-008 filter logic (--repo, --type) was simple enough to include in the same implementation
+---
+
+## 2026-03-03 - US-009 (multi-repo-support)
+- What was implemented: Updated skills/ralph/SKILL.md to support multi-repo PRD splitting. Added multi-repo detection workflow (read ~/.ralph/config.json), repo field requirement for multi-repo stories, per-repo prd.json write rules, per-repo archive checking, multi-repo examples (docs/backend/frontend split), and updated checklist with multi-repo items.
+- Files changed:
+  - skills/ralph/SKILL.md - Major rewrite: added multi-repo output format, write rules, archive rules, multi-repo examples, updated conversion rules and checklist
+- **Learnings for future iterations:**
+  - SKILL.md is a documentation/instruction file — no TypeScript code changes needed, but both root and dashboard builds still pass
+  - Multi-repo story constraint: each story must have `repo` field pointing to a repositories key, and each story can only modify one repo
+  - Docs repos use "文档格式规范检查通过" instead of "类型检查通过" as acceptance criteria
+  - Story IDs remain globally sequential (US-001, US-002...) across repos, not per-repo numbering
+  - The skill instructs Claude Code to read ~/.ralph/config.json at startup to detect multi-repo mode before conversion begins
+---
+
+## 2026-03-03 - US-010 (multi-repo-support)
+- What was implemented: Updated skills/prd/SKILL.md to add multi-repo awareness. Added new "第一步：多仓库检测" step that reads ~/.ralph/config.json before brainstorming. Multi-repo projects get a repo list table displayed to the user. User stories section updated with multi-repo format (目标仓库 field), rules for single-repo-per-story constraint, and docs repo assignment guidance. Updated checklist with multi-repo verification items. Re-numbered all steps (头脑风暴→第二步, 初步澄清→第三步, etc.).
+- Files changed:
+  - skills/prd/SKILL.md - Added multi-repo detection step, multi-repo story format, updated checklist
+- **Learnings for future iterations:**
+  - SKILL.md is pure documentation — no TypeScript changes needed, but still verify both builds pass
+  - The multi-repo detection pattern (read config.json, check repositories) is consistent across /prd and /ralph skills
+  - Step numbering shift is necessary when inserting a new early step — all subsequent steps must be renumbered
+  - docs repos use "文档格式规范检查通过" instead of "类型检查通过" as acceptance criteria — consistent with US-009's SKILL.md
+---
+
+## 2026-03-03 - US-011 (multi-repo-support)
+- What was implemented: Created `skills/start/SKILL.md` — the `/ralph-start` skill with multi-repo support. Includes multi-repo detection workflow, interactive AskUserQuestion prompts for selecting start mode (all repos, specific repo, specific type), parameter passthrough for `--repo` and `--type`, pre-flight checks, and single-repo fallback behavior.
+- Files changed:
+  - skills/start/SKILL.md (new) - Full /ralph-start skill with multi-repo awareness
+- **Learnings for future iterations:**
+  - SKILL.md is pure documentation/instruction — no TypeScript changes needed, only verify both builds still pass
+  - The skill delegates to `ralph run-all` for multi-repo orchestration, keeping the skill focused on user interaction flow
+  - AskUserQuestion pattern with follow-up questions (first select mode, then select repo) provides good UX for multi-step decisions
+  - Single-repo projects skip all interaction and directly start, maintaining backward compatibility
+---
+
+## 2026-03-03 - US-012 (multi-repo-support)
+- What was implemented: Dashboard multi-repo overview cards. Added `getActiveProjectRepos()` to config.ts returning repo info (name, path, type, prdPath, pidPath). Created `/api/repos` API route that reads each repo's prd.json for story progress and PID file for running status. Created `RepoOverviewCards` client component with per-repo cards showing: name, type badge with icon, running status badge, story progress (X/Y), and progress bar. Integrated into dashboard page above Kanban Board. Single-repo projects show nothing (component returns null when no repos configured).
+- Files changed:
+  - dashboard/src/lib/config.ts - Added RepoInfo interface, getActiveProjectRepos() function
+  - dashboard/src/app/api/repos/route.ts (new) - GET endpoint returning RepoStatus[] with story counts and running state
+  - dashboard/src/components/repo-overview-cards.tsx (new) - Client component with polling (5s interval), type-specific icons/colors, status badges
+  - dashboard/src/app/(dashboard)/dashboard/page.tsx - Imported and placed RepoOverviewCards above Kanban Board
+- **Learnings for future iterations:**
+  - RepoOverviewCards uses client-side polling (setInterval 5s) for status updates — will be improved by US-014 WebSocket integration
+  - PID file existence check is a simple proxy for "running" status — the file may persist after crash
+  - Type-specific icon mapping (FileText for docs, Server for backend, Globe for frontend) provides visual differentiation
+  - The component self-hides when no repos are configured (returns null), maintaining backward compatibility
+  - API route imports type from `@/lib/types` for PRD interface — consistent with other API routes
+---
