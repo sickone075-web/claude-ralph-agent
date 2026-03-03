@@ -2,10 +2,6 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { Sidebar } from "@/components/sidebar";
 import { WebSocketProvider } from "@/components/websocket-provider";
 import DashboardPage from "@/pages/dashboard";
-import StoriesPage from "@/pages/stories";
-import TerminalPage from "@/pages/terminal";
-import LogsPage from "@/pages/logs";
-import ArchivesPage from "@/pages/archives";
 import SettingsPage from "@/pages/settings";
 
 function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -34,38 +30,6 @@ export function AppRouter() {
         }
       />
       <Route
-        path="/stories"
-        element={
-          <DashboardLayout>
-            <StoriesPage />
-          </DashboardLayout>
-        }
-      />
-      <Route
-        path="/terminal"
-        element={
-          <DashboardLayout>
-            <TerminalPage />
-          </DashboardLayout>
-        }
-      />
-      <Route
-        path="/logs"
-        element={
-          <DashboardLayout>
-            <LogsPage />
-          </DashboardLayout>
-        }
-      />
-      <Route
-        path="/archives"
-        element={
-          <DashboardLayout>
-            <ArchivesPage />
-          </DashboardLayout>
-        }
-      />
-      <Route
         path="/settings"
         element={
           <DashboardLayout>
@@ -73,6 +37,11 @@ export function AppRouter() {
           </DashboardLayout>
         }
       />
+      {/* Redirect old routes to dashboard */}
+      <Route path="/terminal" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/stories" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/logs" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/archives" element={<Navigate to="/dashboard" replace />} />
     </Routes>
   );
 }
