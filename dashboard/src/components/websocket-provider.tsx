@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect } from "react";
 import { useWebSocket, useWebSocketEvents } from "@/hooks/use-websocket";
 import { useDashboardStore } from "@/lib/store";

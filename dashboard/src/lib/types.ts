@@ -58,3 +58,12 @@ export interface ApiResponse<T> {
   data: T | null;
   error: string | null;
 }
+
+export interface RepoStatus {
+  name: string;
+  path: string;
+  type: string;
+  status: "idle" | "running" | "completed";
+  completedStories: number;
+  totalStories: number;
+}

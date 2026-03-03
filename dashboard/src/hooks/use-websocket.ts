@@ -1,10 +1,12 @@
-"use client";
-
 import { useEffect, useRef, useCallback } from "react";
 import { useDashboardStore } from "@/lib/store";
 import type { RalphStatus } from "@/lib/store";
 
-const WS_URL = "ws://localhost:3001";
+function getWsUrl(): string {
+  const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+  return `${protocol}//${window.location.host}/ws`;
+}
+
 const MAX_RECONNECT_DELAY = 30_000;
 
 interface WsMessage {
@@ -47,7 +49,7 @@ export function useWebSocket() {
     if (wsRef.current?.readyState === WebSocket.OPEN) return;
 
     setWsState("connecting");
-    const ws = new WebSocket(WS_URL);
+    const ws = new WebSocket(getWsUrl());
     wsRef.current = ws;
 
     ws.onopen = () => {

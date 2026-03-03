@@ -1,5 +1,3 @@
-"use client";
-
 import { Draggable } from "@hello-pangea/dnd";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, Circle, Loader2 } from "lucide-react";

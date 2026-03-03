@@ -18,16 +18,13 @@
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "prepublishOnly": "tsc && npx esbuild dashboard/server/ws.ts --bundle --platform=node --format=cjs --outfile=dist/ws-server.cjs && cd dashboard && npm install && npm run build && cd .. && node scripts/prepare-standalone.cjs",
-    "postinstall": "node scripts/postinstall.cjs"
+    "prepublishOnly": "tsc && cd dashboard && npm install && npm run build && cd .. && npx esbuild dashboard/server/index.ts --bundle --platform=node --format=cjs --outfile=dist/dashboard-server.cjs --external:express --external:ws --external:chokidar --external:simple-git"
   },
   "files": [
     "dist/",
     "skills/",
     ".claude-plugin/",
-    "dashboard/.next/standalone/",
-    "scripts/postinstall.cjs",
-    "scripts/prepare-standalone.cjs",
+    "dashboard/dist/",
     "scripts/ralph/ralph.sh",
     "scripts/ralph/CLAUDE.md",
     "scripts/ralph/prompt.md",
@@ -36,8 +33,10 @@
   "dependencies": {
     "chalk": "^5.4.1",
     "commander": "^13.1.0",
+    "express": "^5.1.0",
     "inquirer": "^12.6.0",
-    "open": "^10.1.0"
+    "open": "^10.1.0",
+    "ws": "^8.19.0"
   },
   "devDependencies": {
     "@types/node": "^20",

@@ -1,8 +1,5 @@
-"use client";
-
 import { useState } from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
   BookOpen,
@@ -28,7 +25,7 @@ const navItems = [
 ];
 
 function NavContent() {
-  const pathname = usePathname();
+  const { pathname } = useLocation();
 
   return (
     <div className="flex h-full flex-col">
@@ -48,7 +45,7 @@ function NavContent() {
           return (
             <Link
               key={item.href}
-              href={item.href}
+              to={item.href}
               className={`relative flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors duration-200 ${
                 isActive
                   ? "bg-zinc-800/50 text-white"
@@ -67,7 +64,7 @@ function NavContent() {
         <Separator className="my-3 bg-zinc-800" />
 
         <Link
-          href="/settings"
+          to="/settings"
           className={`relative flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors duration-200 ${
             pathname === "/settings"
               ? "bg-zinc-800/50 text-white"

@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useRef, useImperativeHandle, forwardRef } from "react";
 import { Terminal as XTerm } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";

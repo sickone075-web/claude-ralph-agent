@@ -1,5 +1,3 @@
-"use client";
-
 import { useDashboardStore } from "@/lib/store";
 import type { RalphStatus } from "@/lib/store";
 

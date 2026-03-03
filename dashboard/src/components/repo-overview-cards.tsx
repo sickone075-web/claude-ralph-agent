@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,7 +8,7 @@ import {
   Server,
   Package,
 } from "lucide-react";
-import type { RepoStatus } from "@/app/api/repos/route";
+import type { RepoStatus } from "@/lib/types";
 
 const typeConfig: Record<
   string,
