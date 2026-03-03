@@ -22,17 +22,58 @@ Create detailed Product Requirements Documents that are clear, actionable, and s
 ## 工作流程
 
 1. 接收用户的功能描述
-2. **头脑风暴**：尝试调用 `brainstorming` skill 进行创意发散（如可用）
-3. **初步澄清**：使用 `AskUserQuestion` 工具提出 3-5 个关键问题（交互式选择）
-4. **需求讨论（必选）**：与用户深入讨论细节，补充遗漏，对齐预期
-5. 生成结构化 PRD
-6. 保存到 `tasks/prd-[feature-name].md`
+2. **多仓库检测**：读取 `~/.ralph/config.json` 检查是否为多仓库项目
+3. **头脑风暴**：尝试调用 `brainstorming` skill 进行创意发散（如可用）
+4. **初步澄清**：使用 `AskUserQuestion` 工具提出 3-5 个关键问题（交互式选择）
+5. **需求讨论（必选）**：与用户深入讨论细节，补充遗漏，对齐预期
+6. 生成结构化 PRD
+7. 保存到 `tasks/prd-[feature-name].md`
 
 **重要：** 不要开始实现代码。只创建 PRD。
 
 ---
 
-## 第一步：头脑风暴
+## 第一步：多仓库检测
+
+**在开始头脑风暴之前**，读取 `~/.ralph/config.json` 检查活跃项目是否配置了 `repositories`：
+
+```bash
+# 读取活跃项目名称
+ACTIVE=$(cat ~/.ralph/config.json | jq -r '.activeProject')
+# 读取活跃项目的 repositories
+REPOS=$(cat ~/.ralph/config.json | jq -r ".projects[] | select(.name == \"$ACTIVE\") | .repositories // empty")
+```
+
+### 多仓库项目
+
+如果 `repositories` 存在且非空，告知用户检测到多仓库项目并展示仓库列表：
+
+```
+## 多仓库项目检测
+
+检测到当前活跃项目配置了多个仓库：
+
+| 仓库名称 | 类型 | 路径 |
+|---------|------|------|
+| docs | docs | /path/to/docs |
+| backend | backend | /path/to/backend |
+| frontend | frontend | /path/to/frontend |
+
+**多仓库规则：**
+- 每个用户故事只能修改一个仓库，需在故事中标注目标仓库
+- 文档类故事（API 契约、技术方案等）应分配给 type=docs 的仓库
+- 后续使用 /ralph 转换时会按仓库拆分输出 prd.json
+```
+
+在后续的需求讨论和 PRD 编写中，始终记住仓库分配规则。
+
+### 单仓库项目
+
+如果 `repositories` 不存在或为空，不展示任何多仓库信息，行为与以前完全一致。
+
+---
+
+## 第二步：头脑风暴
 
 在收到用户的功能描述后，**先尝试调用 `superpowers:brainstorming` skill**（通过 Skill 工具）进行创意发散。
 
@@ -47,7 +88,7 @@ Create detailed Product Requirements Documents that are clear, actionable, and s
 
 ---
 
-## 第二步：初步澄清
+## 第三步：初步澄清
 
 针对模糊或缺失的信息，使用 **`AskUserQuestion` 工具**向用户提问。
 
@@ -107,7 +148,7 @@ Create detailed Product Requirements Documents that are clear, actionable, and s
 
 ---
 
-## 第三步：需求讨论（强制）
+## 第四步：需求讨论（强制）
 
 **此步骤不可跳过。** 在收集完初步信息后，必须与用户进行至少一轮深入的需求讨论。
 
@@ -152,7 +193,7 @@ Create detailed Product Requirements Documents that are clear, actionable, and s
 
 ---
 
-## 第四步：编写 PRD
+## 第五步：编写 PRD
 
 基于头脑风暴、澄清问题和需求讨论的全部成果，生成包含以下章节的 PRD：
 
@@ -167,10 +208,11 @@ Create detailed Product Requirements Documents that are clear, actionable, and s
 - **标题：** 简短描述性名称
 - **描述：** "作为[用户角色]，我希望[功能]，以便[收益]"
 - **验收标准：** 可验证的完成清单
+- **目标仓库（多仓库项目）：** 标注该故事属于哪个仓库
 
 每个故事应小到可以在一次集中开发中完成。
 
-**格式：**
+**单仓库格式：**
 ```markdown
 ### US-001: [标题]
 **描述：** 作为[用户角色]，我希望[功能]，以便[收益]。
@@ -182,9 +224,27 @@ Create detailed Product Requirements Documents that are clear, actionable, and s
 - [ ] **[仅 UI 故事]** 使用 dev-browser skill 在浏览器中验证
 ```
 
+**多仓库格式：**
+```markdown
+### US-001: [标题]
+**目标仓库：** backend
+**描述：** 作为[用户角色]，我希望[功能]，以便[收益]。
+
+**验收标准：**
+- [ ] 具体可验证的标准
+- [ ] 另一个标准
+- [ ] 类型检查/lint 通过
+```
+
 **重要：**
 - 验收标准必须可验证，不能模糊。"正常工作"是不好的。"点击按钮后显示删除确认对话框"是好的。
 - **任何涉及 UI 变更的故事：** 必须包含"使用 dev-browser skill 在浏览器中验证"作为验收标准。
+- **多仓库项目规则：**
+  - **每个故事只能修改一个仓库**，不允许跨仓库的故事
+  - 目标仓库必须是 `repositories` 配置中的 key 名称
+  - 文档类故事（API 契约定义、技术方案文档、架构设计文档）应分配给 `type=docs` 的仓库
+  - 如果一个功能涉及多个仓库，应拆分为多个故事（如：docs 仓库定义 API 契约 → backend 仓库实现 API → frontend 仓库对接 API）
+  - docs 仓库的验收标准使用"文档格式规范检查通过"而非"类型检查通过"
 
 ### 4. 功能需求
 编号的具体功能列表：
@@ -329,11 +389,15 @@ PRD 读者可能是初级开发者或 AI agent。因此：
 
 保存 PRD 前确认：
 
+- [ ] 已读取 `~/.ralph/config.json` 检查多仓库配置
+- [ ] 如果是多仓库项目，已展示仓库列表给用户
 - [ ] 已尝试调用 brainstorming skill（或自行完成头脑风暴）
 - [ ] 已使用 AskUserQuestion 工具进行交互式澄清
 - [ ] 已完成至少一轮需求讨论，用户确认无补充
 - [ ] 已整合所有讨论成果到 PRD 中
 - [ ] 用户故事小而具体
+- [ ] **多仓库项目：** 每个故事标注了目标仓库，且每个故事只涉及一个仓库
+- [ ] **多仓库项目：** 文档类故事分配给 type=docs 的仓库
 - [ ] 功能需求有编号且无歧义
 - [ ] 非目标章节定义了清晰的边界
 - [ ] 已保存到 `tasks/prd-[feature-name].md`
