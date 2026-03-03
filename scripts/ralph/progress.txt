@@ -12,6 +12,9 @@ Started: Wed Mar  4 01:15:11     2026
 - Dashboard source is at `dashboard/` from repo root (NOT under `scripts/ralph/dashboard/`)
 - Design system reference is at `design-system/MASTER.md` from repo root
 - RalphStatusIndicator supports `compact` prop for icon-only display
+- Server log cache module is at `dashboard/server/log-cache.ts` — tracks current Story ID and caches logs by story
+- Express v5 `req.params` returns `string | string[]` — use `as string` cast for single params
+- WebSocket `ralph:output` events now include `storyId` field (string | null)
 
 ---
 
@@ -49,4 +52,21 @@ Started: Wed Mar  4 01:15:11     2026
   - ProjectSwitcher component still exists but is no longer in sidebar — may be used in dashboard header
   - Design system MASTER.md is at `design-system/MASTER.md` (not under scripts/ralph/dashboard)
   - Dashboard source is at `dashboard/` from repo root, not `scripts/ralph/dashboard/`
+---
+
+## 2026-03-04 - US-003
+- Created `dashboard/server/log-cache.ts` — in-memory log cache with Map<string, string[]> keyed by Story ID
+- Log cache parses progress.txt to determine current Story ID, also detects Story ID changes from output text
+- Modified `dashboard/server/index.ts` to intercept `ralph:output` events: attaches `storyId` field to payload and caches log lines
+- Log cache clears on ralph process start (fresh run)
+- Added `GET /api/logs` route returning all execution logs
+- Added `GET /api/logs/:storyId` route returning logs filtered by Story ID
+- Existing `/api/logs/progress` and `/api/logs/git` routes preserved
+- TypeScript check passes (only pre-existing server errors remain)
+- Files changed: `dashboard/server/log-cache.ts` (new), `dashboard/server/index.ts`, `dashboard/server/routes/logs.ts`
+- **Learnings for future iterations:**
+  - Express v5 route params are typed as `string | string[]`, need `as string` cast
+  - Route order matters: specific routes (`/progress`, `/git`) must come before param routes (`/:storyId`)
+  - The `onEvent` callback in index.ts is the single point to intercept all Ralph process events before broadcasting
+  - Log cache is in-memory only — clears on server restart (by design)
 ---

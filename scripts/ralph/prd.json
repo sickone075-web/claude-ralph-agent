@@ -57,7 +57,7 @@
         "类型检查通过"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": "progress.txt 中的条目格式为 '## YYYY-MM-DD - US-XXX'，可据此解析当前执行的 Story ID。日志缓存在服务端内存中即可，进程重启后清空。WebSocket 事件在 dashboard/server/index.ts 中处理。"
     },
     {

@@ -5,6 +5,7 @@ import { watch, type FSWatcher } from "chokidar";
 import path from "path";
 import { onEvent, sendStdin, getPidFilePath, detectRunningFromPid } from "../src/lib/ralph-process";
 import { getActiveProjectPaths, getActiveProjectRepos } from "../src/lib/config";
+import { initLogCache, addLogLine, getCurrentStoryId, setCurrentStoryId, detectStoryIdFromOutput, clearLogCache } from "./log-cache";
 
 // Routes
 import { ralphRouter } from "./routes/ralph";
@@ -68,8 +69,40 @@ function broadcast(type: string, payload: object) {
   }
 }
 
+// Initialize log cache
+initLogCache();
+
 // Subscribe to Ralph process events and broadcast to all WebSocket clients
 onEvent((event: string, data: unknown) => {
+  if (event === "ralph:output") {
+    const payload = data as { stream: string; text: string };
+    const text = payload.text;
+
+    // Try to detect story ID changes from output
+    const detectedId = detectStoryIdFromOutput(text);
+    if (detectedId) {
+      setCurrentStoryId(detectedId);
+    }
+
+    const storyId = getCurrentStoryId();
+
+    // Cache the log line
+    addLogLine(text, storyId);
+
+    // Broadcast with storyId attached
+    broadcast(event, { ...payload, storyId });
+    return;
+  }
+
+  if (event === "ralph:status") {
+    const payload = data as { status: string };
+    // Clear log cache when ralph starts fresh
+    if (payload.status === "running") {
+      clearLogCache();
+      initLogCache();
+    }
+  }
+
   broadcast(event, data as object);
 });
 
