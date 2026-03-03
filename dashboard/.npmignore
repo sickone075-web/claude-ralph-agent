@@ -1,0 +1,26 @@
+# npm publish: only include built output needed for production
+# Override .gitignore to include .next/standalone and .next/static
+node_modules/
+src/
+server/
+*.ts
+!*.d.ts
+.next/cache/
+.env*
+.pnp*
+.yarn/
+coverage/
+/out/
+/build/
+.vercel
+*.tsbuildinfo
+next-env.d.ts
+*.pem
+*.log
+.DS_Store
+package-lock.json
+postcss.config.mjs
+eslint.config.mjs
+components.json
+README.md
+tsconfig.json

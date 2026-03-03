@@ -103,7 +103,13 @@ export async function runStart(options: { open?: boolean }): Promise<void> {
   const children: ChildProcess[] = [];
 
   // Determine how to start the Next.js server
-  const standalonePath = resolve(dashboardDir, '.next/standalone/server.js');
+  // standalone server.js may be at .next/standalone/server.js or .next/standalone/dashboard/server.js
+  // depending on whether Next.js detects a workspace root above dashboard/
+  const standalonePathDirect = resolve(dashboardDir, '.next/standalone/server.js');
+  const standalonePathNested = resolve(dashboardDir, '.next/standalone/dashboard/server.js');
+  const standalonePath = existsSync(standalonePathDirect) ? standalonePathDirect
+    : existsSync(standalonePathNested) ? standalonePathNested
+    : standalonePathDirect;
   const env = {
     ...process.env,
     PORT: String(port),

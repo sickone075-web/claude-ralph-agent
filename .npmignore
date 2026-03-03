@@ -1,0 +1,33 @@
+# Source files (only publish compiled dist/)
+src/
+
+# Dashboard source and dev files
+dashboard/src/
+dashboard/server/
+dashboard/node_modules/
+dashboard/package.json
+dashboard/package-lock.json
+dashboard/tsconfig.json
+dashboard/next.config.ts
+dashboard/postcss.config.mjs
+dashboard/eslint.config.mjs
+dashboard/components.json
+dashboard/.next/cache/
+dashboard/tailwind.config.ts
+
+# Runtime data files
+scripts/ralph/archive/
+scripts/ralph/prd.json
+scripts/ralph/progress.txt
+scripts/ralph/.last-branch
+scripts/ralph/.ralph-output-tmp
+scripts/ralph/ralph-dev.sh
+
+# Development files
+tasks/
+.claude/
+nul
+*.log
+.env
+.env.local
+.DS_Store

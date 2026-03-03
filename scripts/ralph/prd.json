@@ -219,8 +219,8 @@
         "TypeScript 类型检查通过"
       ],
       "priority": 12,
-      "passes": false,
-      "notes": "这是最后一个故事，依赖前面所有故事。standalone 模式会大幅减小 npm 包体积。"
+      "passes": true,
+      "notes": "这是最后一个故事，依赖前面所有故事。standalone 模式会大幅减小 npm 包体积。next.config.ts 配置 output: 'standalone'。files 字段精确列出发布文件，.npmignore 排除运行时数据。standalone server.js 路径因 Next.js workspace 检测可能在 .next/standalone/dashboard/server.js，start.ts 已处理双路径。npm pack + install -g 测试通过。"
     }
   ]
 }

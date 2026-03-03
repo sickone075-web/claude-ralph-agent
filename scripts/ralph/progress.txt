@@ -14,6 +14,8 @@
 - ws.ts (WebSocket server) runs standalone via tsx and imports from relative paths (../src/lib/), not @/lib/ aliases
 - Next.js 16 dynamic route params are `Promise<{ name: string }>` — must be awaited
 - Pre-existing lint errors (7 total) won't block commits; they're in ws.ts, logs, story components, websocket hook
+- Next.js standalone output: server.js may be at .next/standalone/server.js or .next/standalone/dashboard/server.js depending on workspace root detection
+- npm publish: files field is whitelist; need dashboard/.npmignore to override dashboard/.gitignore's .next/ exclusion
 
 # Ralph Progress Log
 Started: 2026年03月 2日 22:51:22
@@ -129,4 +131,15 @@ Started: 2026年03月 2日 22:51:22
   - `jq -r '.field // empty'` returns empty string for null/missing fields — perfect for bash conditional checks
   - Track CLI-explicit args with flag variables (_CLI_TOOL etc.) to distinguish "user passed --tool amp" from "default value amp"
   - Config reading is placed between argument parsing and tool validation so config values are validated too
+---
+
+## 2026-03-03 - US-012
+- What was implemented: npm publish build process. Configured next.config.ts with output: 'standalone' for reduced bundle size. Added prepublishOnly script to root package.json (tsc + dashboard build). Refined files field to precisely list published files (dist/, dashboard/.next/standalone/, dashboard/.next/static/, dashboard/public/, specific scripts/ralph/ files). Created dashboard/.npmignore to override .gitignore and include .next/ build output. Created root .npmignore for additional exclusions. Fixed start.ts standalone path detection to handle both direct and nested server.js locations (workspace root detection by Next.js changes the output path). Verified npm pack produces correct 84-file package (~623KB), global install works, ralph --help and --version pass.
+- Files changed: dashboard/next.config.ts (added output: 'standalone'), package.json (prepublishOnly script, refined files), .npmignore (new), dashboard/.npmignore (new), src/commands/start.ts (dual standalone path detection)
+- **Learnings for future iterations:**
+  - Next.js standalone output path depends on workspace root detection — when multiple lockfiles exist, server.js may end up at .next/standalone/dashboard/server.js instead of .next/standalone/server.js
+  - npm `files` field is a whitelist but nested .gitignore files still apply — need dashboard/.npmignore to override dashboard/.gitignore's exclusion of .next/
+  - Using specific file paths in `files` (e.g., "scripts/ralph/ralph.sh") is more precise than directory globs for excluding runtime data
+  - npm pack --dry-run is essential for verifying package contents before publishing
+  - Global install from tgz (npm install -g ./file.tgz) is the definitive test for publish readiness
 ---

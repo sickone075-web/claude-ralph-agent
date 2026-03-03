@@ -8,14 +8,18 @@
   },
   "scripts": {
     "build": "tsc",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "tsc && cd dashboard && npm install && npm run build"
   },
   "files": [
     "dist/",
     "dashboard/.next/standalone/",
     "dashboard/.next/static/",
     "dashboard/public/",
-    "scripts/"
+    "scripts/ralph/ralph.sh",
+    "scripts/ralph/CLAUDE.md",
+    "scripts/ralph/prompt.md",
+    "scripts/ralph/prd.json.example"
   ],
   "dependencies": {
     "chalk": "^5.4.1",
