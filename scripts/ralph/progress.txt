@@ -15,6 +15,8 @@ Started: Tue Mar  3 11:21:16     2026
 - @xyflow/react styles imported globally in globals.css; ReactFlow components need `"use client"`
 - ReactFlow custom nodes: wrap with `memo()`, export data interface, use `Handle` for connections
 - TypeScript check: `cd dashboard && npx tsc --noEmit`
+- ReactFlow Node data needs `as unknown as Record<string, unknown>` cast for custom data interfaces
+- `nodeTypes` object must be defined outside component to prevent ReactFlow re-registration warnings
 
 ---
 
@@ -76,4 +78,17 @@ Started: Tue Mar  3 11:21:16     2026
   - Total duration calculated from first startedAt to last completedAt across all stories
   - Duration formatter extended for hours (h/m format) since total project time can exceed 60 minutes
   - Dashed border style: `border-dashed border-zinc-700` for incomplete state
+---
+
+## 2026-03-03 - US-006
+- What was implemented: Created `dashboard/src/components/flow/story-flow.tsx` — the main ReactFlow canvas component that orchestrates all flow nodes. Renders StartNode → StoryNodes (sorted by priority) → EndNode in vertical layout with 100px gaps. Supports animated edges for running stories, fitView, dot grid background, zoom/pan, and click-to-select story nodes.
+- Files changed:
+  - dashboard/src/components/flow/story-flow.tsx (new component)
+- **Learnings for future iterations:**
+  - ReactFlow `Node` data type requires `Record<string, unknown>` — custom data interfaces need `as unknown as Record<string, unknown>` cast
+  - Node positions are manually calculated: `{ x: offset, y: index * (height + gap) }` — no external layout library needed
+  - `nodeTypes` must be defined OUTSIDE the component (constant) to avoid re-renders
+  - StoryFlow accepts `readOnly` prop for archive viewing (disables animations and selection)
+  - `onStoryNodeClick` callback filters for storyNode type only (start/end nodes don't trigger)
+  - `proOptions={{ hideAttribution: true }}` removes ReactFlow watermark
 ---
