@@ -66,3 +66,14 @@ Started: Tue Mar  3 11:21:16     2026
   - `tabular-nums` class ensures timer digits don't shift layout during updates
   - Node width is fixed at 280px per PRD spec; has both top (target) and bottom (source) Handles
 ---
+
+## 2026-03-03 - US-005
+- What was implemented: Created `dashboard/src/components/flow/end-node.tsx` — a ReactFlow custom node for the flow chart bottom. Shows green check + "全部完成" + total duration when all stories complete; shows grey dashed border + "待完成" + remaining count otherwise.
+- Files changed:
+  - dashboard/src/components/flow/end-node.tsx (new component)
+- **Learnings for future iterations:**
+  - EndNode only has a top Handle (target) — it's the terminal node in the flow
+  - Total duration calculated from first startedAt to last completedAt across all stories
+  - Duration formatter extended for hours (h/m format) since total project time can exceed 60 minutes
+  - Dashed border style: `border-dashed border-zinc-700` for incomplete state
+---
