@@ -1,45 +1,69 @@
 {
   "project": "MyApp",
-  "branchName": "ralph/task-priority",
-  "description": "Task Priority System - Add priority levels to tasks",
+  "branchName": "ralph/user-auth",
+  "description": "User Authentication - Add login, registration, and API contract documentation",
+  "repositories": {
+    "docs": {
+      "path": "/home/user/projects/myapp-docs",
+      "type": "docs",
+      "priority": 0
+    },
+    "backend": {
+      "path": "/home/user/projects/myapp-backend",
+      "type": "backend",
+      "priority": 1,
+      "checks": ["npm run typecheck", "npm run lint", "npm test"]
+    },
+    "frontend": {
+      "path": "/home/user/projects/myapp-frontend",
+      "type": "frontend",
+      "priority": 1,
+      "checks": ["npm run typecheck", "npm run lint"]
+    }
+  },
   "userStories": [
     {
       "id": "US-001",
-      "title": "Add priority field to database",
-      "description": "As a developer, I need to store task priority so it persists across sessions.",
+      "title": "Define authentication API contract",
+      "description": "As a developer, I need API contract documentation for auth endpoints so frontend and backend teams can work in parallel.",
+      "repo": "docs",
       "acceptanceCriteria": [
-        "Add priority column to tasks table: 'high' | 'medium' | 'low' (default 'medium')",
-        "Generate and run migration successfully",
-        "Typecheck passes"
+        "Document POST /api/auth/register endpoint (request/response schema, error codes)",
+        "Document POST /api/auth/login endpoint (request/response schema, error codes)",
+        "Document POST /api/auth/logout endpoint",
+        "Markdown format is valid and well-structured",
+        "All endpoint descriptions include example request and response bodies"
       ],
       "priority": 1,
       "passes": false,
-      "notes": ""
+      "notes": "Docs repo runs first (priority 0) so contracts are available before backend/frontend start."
     },
     {
       "id": "US-002",
-      "title": "Display priority indicator on task cards",
-      "description": "As a user, I want to see task priority at a glance.",
+      "title": "Implement user registration endpoint",
+      "description": "As a user, I want to register an account so I can access the application.",
+      "repo": "backend",
       "acceptanceCriteria": [
-        "Each task card shows colored priority badge (red=high, yellow=medium, gray=low)",
-        "Priority visible without hovering or clicking",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
+        "POST /api/auth/register accepts email and password",
+        "Password is hashed before storage",
+        "Returns 201 with user object on success",
+        "Returns 409 if email already exists",
+        "Typecheck passes"
       ],
       "priority": 2,
       "passes": false,
-      "notes": ""
+      "notes": "Follow the API contract from US-001. Read docs repo for endpoint specification."
     },
     {
       "id": "US-003",
-      "title": "Add priority selector to task edit",
-      "description": "As a user, I want to change a task's priority when editing it.",
+      "title": "Implement login endpoint",
+      "description": "As a user, I want to log in so I can access protected resources.",
+      "repo": "backend",
       "acceptanceCriteria": [
-        "Priority dropdown in task edit modal",
-        "Shows current priority as selected",
-        "Saves immediately on selection change",
-        "Typecheck passes",
-        "Verify in browser using dev-browser skill"
+        "POST /api/auth/login accepts email and password",
+        "Returns JWT token on success",
+        "Returns 401 on invalid credentials",
+        "Typecheck passes"
       ],
       "priority": 3,
       "passes": false,
@@ -47,16 +71,36 @@
     },
     {
       "id": "US-004",
-      "title": "Filter tasks by priority",
-      "description": "As a user, I want to filter the task list to see only high-priority items.",
+      "title": "Build registration form",
+      "description": "As a user, I want a registration form so I can create an account.",
+      "repo": "frontend",
       "acceptanceCriteria": [
-        "Filter dropdown with options: All | High | Medium | Low",
-        "Filter persists in URL params",
-        "Empty state message when no tasks match filter",
+        "Registration page with email and password fields",
+        "Client-side validation (email format, password length >= 8)",
+        "Calls POST /api/auth/register on submit",
+        "Shows success message and redirects to login",
+        "Shows error message on failure",
         "Typecheck passes",
         "Verify in browser using dev-browser skill"
       ],
       "priority": 4,
+      "passes": false,
+      "notes": "Follow the API contract from US-001."
+    },
+    {
+      "id": "US-005",
+      "title": "Build login form",
+      "description": "As a user, I want a login form so I can access my account.",
+      "repo": "frontend",
+      "acceptanceCriteria": [
+        "Login page with email and password fields",
+        "Calls POST /api/auth/login on submit",
+        "Stores JWT token on success and redirects to dashboard",
+        "Shows error message on invalid credentials",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 5,
       "passes": false,
       "notes": ""
     }
