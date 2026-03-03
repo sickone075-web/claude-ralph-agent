@@ -9,7 +9,8 @@
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "prepublishOnly": "tsc && cd dashboard && npm install && npm run build"
+    "prepublishOnly": "tsc && cd dashboard && npm install && npm run build && cd .. && node scripts/prepare-standalone.cjs",
+    "postinstall": "node scripts/postinstall.cjs"
   },
   "files": [
     "dist/",
@@ -18,6 +19,8 @@
     "dashboard/.next/standalone/",
     "dashboard/.next/static/",
     "dashboard/public/",
+    "scripts/postinstall.cjs",
+    "scripts/prepare-standalone.cjs",
     "scripts/ralph/ralph.sh",
     "scripts/ralph/CLAUDE.md",
     "scripts/ralph/prompt.md",
