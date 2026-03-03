@@ -10,6 +10,10 @@ Started: Tue Mar  3 16:05:19     2026
 - ralph.sh CLI: `--tool amp|claude --timeout <min> --webhook <url> <max_iterations>`
 - /ralph-stop uses platform detection (uname -s) to choose between taskkill (Windows) and kill (Unix)
 - On Windows (Git Bash), taskkill uses //pid and //t //f (double-slash for MSYS path translation)
+- `getPidFilePath()` in ralph-process.ts resolves PID path from active project config, reusable across modules
+- chokidar needs `add`/`unlink` handlers for file creation/deletion, not just `change`
+- `request.json()` throws on empty body — wrap in try/catch for optional-body API routes
+- ralph.sh CLI arg order: `--tool X [--timeout Y] [--webhook Z] <maxIterations>` (positional last)
 
 ---
 
@@ -60,4 +64,57 @@ Started: Tue Mar  3 16:05:19     2026
   - /ralph-stop uses platform detection (uname -s) to choose between taskkill (Windows) and kill (Unix)
   - On Windows (Git Bash), taskkill uses //pid and //t //f (double-slash for MSYS path translation)
   - Skills should handle stale PID files gracefully (process died without cleanup)
+---
+
+## 2026-03-03 - US-004
+- Terminal page converted to monitoring-only mode
+- Files changed: dashboard/src/app/(dashboard)/terminal/page.tsx
+- **What was implemented:**
+  - Removed imports: Play, Square icons and Select component family
+  - Removed state: tool, maxIterations, isStarting, isStopping
+  - Removed handlers: handleStart, handleStop and their API call logic
+  - Removed entire "Row 2: Controls" section (tool selector, iterations selector, start/stop buttons)
+  - Updated welcome message from "使用上方控件启动" to "在 Claude Code 中使用 /ralph-start 启动循环"
+  - Retained: status badge, iteration progress, elapsed time, WebSocket indicator, live terminal, iteration history tabs, toolbar (clear/auto-scroll/download), completion summary
+- **Learnings for future iterations:**
+  - Terminal page is a pure monitoring view now — all launch control is via /ralph-start Skill
+  - The page still subscribes to ralph:output and ralph:iteration WebSocket events for real-time monitoring
+  - Loader2 icon is still used by the dynamic import loading fallback, don't remove it
+  - The completion summary logic uses sessionStartRef to track session duration across status changes
+---
+
+## 2026-03-03 - US-005
+- Dashboard now detects externally started Ralph via PID file
+- Files changed: dashboard/src/lib/ralph-process.ts, dashboard/server/ws.ts
+- **What was implemented:**
+  - Added `getPidFilePath()` helper that resolves PID file path from active project config
+  - Added `detectRunningFromPid()` function that reads .ralph-pid and checks process liveness via `process.kill(pid, 0)`
+  - Updated `getRalphStatus()` to fallback to PID file detection when no in-memory process exists
+  - Updated `isRunning()` to also check PID file for externally started processes
+  - Added .ralph-pid to ws.ts file watcher list
+  - Added `change`, `add`, and `unlink` handlers for PID file to broadcast `ralph:status` events
+  - When PID file appears/changes → check process alive → broadcast `running`
+  - When PID file disappears → broadcast `idle`
+- **Learnings for future iterations:**
+  - `process.kill(pid, 0)` works on both Windows and Unix for process liveness check (same as shell `kill -0`)
+  - chokidar needs both `add`/`unlink` handlers for file create/delete events, not just `change`
+  - `getPidFilePath()` is exported for reuse by both ralph-process.ts and ws.ts
+  - The PID file path is derived from active project config: `{projectPath}/scripts/ralph/.ralph-pid`
+---
+
+## 2026-03-03 - US-006
+- Start API now supports empty body calls and passes all parameters to ralph.sh
+- Files changed: dashboard/src/app/api/ralph/start/route.ts, dashboard/src/lib/ralph-process.ts
+- **What was implemented:**
+  - route.ts: `request.json()` wrapped in try/catch to handle empty body gracefully
+  - route.ts: Reads `getConfig()` for defaults (defaultTool, defaultMaxIterations, timeoutMinutes, webhookUrl)
+  - route.ts: Provided body params override config defaults; missing params fall back to config
+  - route.ts: Response now includes timeout and webhook in data payload
+  - ralph-process.ts: `startRalph` params extended with optional `timeout` and `webhook`
+  - ralph-process.ts: Args built dynamically — `--timeout` and `--webhook` only added when values are present
+  - ralph-process.ts: `maxIterations` remains the last positional argument as ralph.sh expects
+- **Learnings for future iterations:**
+  - `request.json()` throws on empty body — wrap in try/catch for optional body APIs
+  - ralph.sh CLI arg order: `--tool X [--timeout Y] [--webhook Z] <maxIterations>` (positional arg last)
+  - `getConfig()` from `@/lib/config` merges file config with DEFAULTS, always returns full DashboardConfig
 ---

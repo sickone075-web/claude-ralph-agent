@@ -96,6 +96,8 @@ export function isRunning(): boolean {
 export function startRalph(params: {
   tool: "claude" | "amp";
   maxIterations: number;
+  timeout?: number;
+  webhook?: string;
 }): void {
   if (isRunning()) {
     throw new Error("Ralph is already running");
@@ -105,7 +107,14 @@ export function startRalph(params: {
   const projectPaths = getActiveProjectPaths();
   const cwd = projectPaths?.projectPath ?? scriptPath.substring(0, scriptPath.lastIndexOf("/"));
 
-  const args = ["--tool", params.tool, String(params.maxIterations)];
+  const args = ["--tool", params.tool];
+  if (params.timeout && params.timeout > 0) {
+    args.push("--timeout", String(params.timeout));
+  }
+  if (params.webhook) {
+    args.push("--webhook", params.webhook);
+  }
+  args.push(String(params.maxIterations));
 
   const isWindows = process.platform === "win32";
   let child: ChildProcess;

@@ -67,7 +67,7 @@
         "使用 dev-browser skill 在浏览器中验证"
       ],
       "priority": 4,
-      "passes": false,
+      "passes": true,
       "notes": "文件：dashboard/src/app/(dashboard)/terminal/page.tsx。只做减法，不添加新功能。"
     },
     {
@@ -82,7 +82,7 @@
         "类型检查通过"
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "notes": "文件：dashboard/src/lib/ralph-process.ts 和 dashboard/server/ws.ts。Windows 上 process.kill(pid, 0) 也可用于检测进程存活。"
     },
     {
@@ -97,7 +97,7 @@
         "类型检查通过"
       ],
       "priority": 6,
-      "passes": false,
+      "passes": true,
       "notes": "文件：dashboard/src/app/api/ralph/start/route.ts 和 dashboard/src/lib/ralph-process.ts。"
     }
   ]
