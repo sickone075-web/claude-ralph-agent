@@ -15,6 +15,7 @@ import { projectsRouter } from "./routes/projects";
 import { logsRouter } from "./routes/logs";
 import { archivesRouter } from "./routes/archives";
 import { reposRouter } from "./routes/repos";
+import { gitRouter } from "./routes/git";
 
 const PORT = parseInt(process.env.PORT || "3000", 10);
 
@@ -29,6 +30,7 @@ app.use("/api/projects", projectsRouter);
 app.use("/api/logs", logsRouter);
 app.use("/api/archives", archivesRouter);
 app.use("/api/repos", reposRouter);
+app.use("/api/git", gitRouter);
 
 // --- Static SPA files ---
 const clientDistDir = path.resolve(__dirname, "../dist/client");
