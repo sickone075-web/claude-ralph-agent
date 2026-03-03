@@ -6,6 +6,8 @@ Started: Tue Mar  3 16:05:19     2026
 - `kill -0 $pid` works on both Unix and Windows (Git Bash) for process liveness check
 - ralph.sh uses `set -e` + `trap cleanup EXIT` for cleanup on any exit
 - ralph.sh reads config from ~/.ralph/config.json with CLI args as override
+- Skills are markdown files at skills/<name>/SKILL.md with frontmatter (name, description, user-invocable)
+- ralph.sh CLI: `--tool amp|claude --timeout <min> --webhook <url> <max_iterations>`
 
 ---
 
@@ -23,4 +25,22 @@ Started: Tue Mar  3 16:05:19     2026
   - `trap cleanup EXIT` covers normal exit, error exit, and signal termination
   - `kill -0 $pid` works on both Unix and Windows (Git Bash) for process liveness check
   - ralph.sh uses `set -e` so any unhandled error triggers EXIT trap
+---
+
+## 2026-03-03 - US-002
+- Created /ralph-start Skill at skills/start/SKILL.md
+- Files changed: skills/start/SKILL.md
+- **What was implemented:**
+  - Skill with name `ralph-start`, user-invocable: true
+  - 7-step flow: check PID → read config → apply overrides → check PRD → print summary → launch background → confirm
+  - Reads ~/.ralph/config.json for defaults (defaultTool, defaultMaxIterations, timeoutMinutes, webhookUrl)
+  - Supports --tool, --iterations, --timeout, --webhook parameter overrides
+  - Reads scripts/ralph/prd.json to count pending stories
+  - Checks .ralph-pid to detect already-running instance
+  - Uses Bash tool with run_in_background to launch ralph.sh
+- **Learnings for future iterations:**
+  - Skills are pure markdown instruction files at skills/<name>/SKILL.md
+  - Skill frontmatter requires: name, description, user-invocable fields
+  - Existing skills (prd, ralph) follow the same pattern in skills/ directory
+  - ralph.sh CLI: `--tool amp|claude --timeout <min> --webhook <url> <max_iterations>`
 ---

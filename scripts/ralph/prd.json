@@ -33,7 +33,7 @@
         "返回 Ralph 已启动 结果"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": "Skill 是 markdown 指令文件，指导 Claude Code 使用 Bash 工具和 Read 工具完成流程。后台执行使用 Bash 工具的 run_in_background。"
     },
     {
