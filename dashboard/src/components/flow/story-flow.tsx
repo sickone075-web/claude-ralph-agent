@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useCallback } from "react";
+import { useMemo, useCallback, useState } from "react";
 import {
   ReactFlow,
   Background,
@@ -14,6 +14,7 @@ import { StoryNode, type StoryNodeData } from "./story-node";
 import { EndNode, type EndNodeData } from "./end-node";
 import type { Story, StoryStatus } from "@/lib/types";
 import type { RalphStatus } from "@/lib/store";
+import { StoryDetailPanel } from "./story-detail-panel";
 
 const nodeTypes: NodeTypes = {
   startNode: StartNode,
@@ -205,39 +206,54 @@ export function StoryFlow({
     readOnly,
   ]);
 
+  const [selectedStory, setSelectedStory] = useState<Story | null>(null);
+  const [panelOpen, setPanelOpen] = useState(false);
+
   const onNodeClick = useCallback(
     (_event: React.MouseEvent, node: Node) => {
-      if (node.type === "storyNode" && onStoryNodeClick) {
+      if (node.type === "storyNode") {
         const story = stories.find((s) => s.id === node.id);
-        if (story) onStoryNodeClick(story);
+        if (story) {
+          setSelectedStory(story);
+          setPanelOpen(true);
+          if (onStoryNodeClick) onStoryNodeClick(story);
+        }
       }
     },
     [stories, onStoryNodeClick]
   );
 
   return (
-    <ReactFlow
-      nodes={nodes}
-      edges={edges}
-      nodeTypes={nodeTypes}
-      onNodeClick={onNodeClick}
-      fitView
-      fitViewOptions={{ padding: 0.2 }}
-      minZoom={0.3}
-      maxZoom={1.5}
-      panOnScroll
-      zoomOnScroll
-      proOptions={{ hideAttribution: true }}
-      nodesDraggable={false}
-      nodesConnectable={false}
-      elementsSelectable={!readOnly}
-    >
-      <Background
-        variant={BackgroundVariant.Dots}
-        gap={20}
-        size={1}
-        color="#27272a"
+    <>
+      <ReactFlow
+        nodes={nodes}
+        edges={edges}
+        nodeTypes={nodeTypes}
+        onNodeClick={onNodeClick}
+        fitView
+        fitViewOptions={{ padding: 0.2 }}
+        minZoom={0.3}
+        maxZoom={1.5}
+        panOnScroll
+        zoomOnScroll
+        proOptions={{ hideAttribution: true }}
+        nodesDraggable={false}
+        nodesConnectable={false}
+        elementsSelectable={!readOnly}
+      >
+        <Background
+          variant={BackgroundVariant.Dots}
+          gap={20}
+          size={1}
+          color="#27272a"
+        />
+      </ReactFlow>
+      <StoryDetailPanel
+        story={selectedStory}
+        open={panelOpen}
+        onOpenChange={setPanelOpen}
+        readOnly={readOnly}
       />
-    </ReactFlow>
+    </>
   );
 }
