@@ -1,145 +1,43 @@
-## Codebase Patterns
-- Root package.json is `claude-ralph`, type: module, bin: `./dist/bin/ralph.js`
-- Root tsconfig.json compiles src/ -> dist/, target ES2020, module ES2020
-- Dashboard is a Next.js app in dashboard/ with its own package.json
-- scripts/ralph/ contains runtime data (prd.json, progress.txt, archive/); scripts/ contains shared tools (ralph.sh, CLAUDE.md)
-- Use `npx tsc --noEmit` for root TypeScript checks; `cd dashboard && npm run build` for dashboard checks
-- CLI uses Commander.js with ESM imports; version read from package.json via readFileSync (not import assertion)
-- `npm link` at root makes `ralph` command available globally for testing
-- Global config at ~/.ralph/config.json; use src/lib/global-config.ts for read/write; atomic writes use tmp file in same dir (not os.tmpdir) to avoid cross-drive rename failures on Windows
-- Dashboard uses Next.js 16 with tsx for WS server; `next start` for production, standalone mode when available
-- On Windows, use `.cmd` suffixed binaries from node_modules/.bin (next.cmd, tsx.cmd) and set shell: true for spawn
-- Port check: use net.createServer trick to test if port is available before starting servers
-- Dashboard config (dashboard/src/lib/config.ts) mirrors src/lib/global-config.ts structure; all API routes use getActiveProjectPaths() for project-relative paths
-- ws.ts (WebSocket server) runs standalone via tsx and imports from relative paths (../src/lib/), not @/lib/ aliases
-- Next.js 16 dynamic route params are `Promise<{ name: string }>` — must be awaited
-- Pre-existing lint errors (7 total) won't block commits; they're in ws.ts, logs, story components, websocket hook
-- Next.js standalone output: server.js may be at .next/standalone/server.js or .next/standalone/dashboard/server.js depending on workspace root detection
-- npm publish: files field is whitelist; need dashboard/.npmignore to override dashboard/.gitignore's .next/ exclusion
-
 # Ralph Progress Log
-Started: 2026年03月 2日 22:51:22
+Started: Tue Mar  3 11:21:16     2026
 ---
 
-## 2026-03-02 23:00 - US-001
-- What was implemented: Project structure migration - created root package.json (claude-ralph), tsconfig.json, src/ directory structure (bin/ralph.ts, commands/, lib/). Moved ralph.sh and CLAUDE.md from scripts/ralph/ to scripts/. Updated .gitignore for dist/ and node_modules/.
-- Files changed: package.json (new), tsconfig.json (new), src/bin/ralph.ts (new), scripts/ralph.sh (moved), scripts/CLAUDE.md (moved), .gitignore (updated)
-- **Learnings for future iterations:**
-  - Dashboard in dashboard/ is independent with its own package.json - no need to move it
-  - scripts/ralph/ still contains runtime data files (prd.json, progress.txt, .last-branch, archive/) - these stay in place
-  - Root tsconfig uses moduleResolution: "bundler" for ES module compatibility
-  - npm install at root adds 51 packages (CLI deps: commander, inquirer, chalk, open)
+## Codebase Patterns
+- Story type is in `dashboard/src/lib/types.ts`, used by all API routes and components
+- PRD read/write uses atomic file operations (tmp + rename) in `dashboard/src/lib/prd-file.ts`
+- API routes at `dashboard/src/app/api/prd/stories/[id]/route.ts` handle story CRUD
+- WebSocket server at `dashboard/server/ws.ts` broadcasts file change events
+- Dashboard uses zustand store at `dashboard/src/lib/store.ts` for state management
+- Dark theme enforced globally: zinc-900 bg, zinc-800 borders, cyan/blue accents
+- Story status determined by: `passes=true` → completed, `id === currentStoryId && ralphRunning` → running, else pending
+- shadcn/ui components in `dashboard/src/components/ui/`
+- Flow components (ReactFlow-based) live in `dashboard/src/components/flow/`
+- @xyflow/react styles imported globally in globals.css; ReactFlow components need `"use client"`
+- TypeScript check: `cd dashboard && npx tsc --noEmit`
+
 ---
 
-## 2026-03-02 23:15 - US-002
-- What was implemented: CLI entry point with Commander.js - registered 5 subcommands (init, start, stop, config, add-project) with placeholder actions. `ralph` with no args shows help (exit 0). `ralph --version` outputs package.json version. Shebang preserved in compiled output. npm link tested successfully.
-- Files changed: src/bin/ralph.ts (rewritten from placeholder to full Commander.js CLI)
+## 2026-03-03 - US-001
+- What was implemented: Extended Story type with `startedAt?: string`, `completedAt?: string`, and `status?: StoryStatus` fields. Updated PUT API route to auto-set timestamps on status transitions (running→startedAt, completed/failed→completedAt, passes=true→completedAt+status).
+- Files changed:
+  - dashboard/src/lib/types.ts (added StoryStatus type and optional fields to Story)
+  - dashboard/src/app/api/prd/stories/[id]/route.ts (auto-timestamp logic in PUT handler)
 - **Learnings for future iterations:**
-  - ESM module needs `fileURLToPath(import.meta.url)` for __dirname equivalent
-  - Commander.js `.action()` on program itself handles the no-args case (shows help with exit 0)
-  - `npx tsc` compiles to dist/ and preserves shebang line from source
-  - `npm link` works for global command testing without publishing
+  - New optional fields are backward-compatible: `readPrd()` uses `JSON.parse` which ignores missing optional fields
+  - The PUT route explicitly picks known fields to write, so new fields must be added there when extending Story
+  - `StoryStatus` is exported from types.ts for reuse in other components
 ---
 
-## 2026-03-02 23:30 - US-003
-- What was implemented: Global config module at src/lib/global-config.ts. Exports readConfig(), writeConfig(), getConfigPath(), getConfigDir() functions and RalphConfig/ProjectConfig types. Config stored at ~/.ralph/config.json. Auto-creates directory and default config on first read. Uses atomic write (tmp file + rename in same directory to avoid cross-drive issues on Windows).
-- Files changed: src/lib/global-config.ts (new)
+## 2026-03-03 - US-002
+- What was implemented: Installed @xyflow/react dependency, imported its styles in globals.css, and created a minimal test component at `dashboard/src/components/flow/react-flow-test.tsx` to verify ReactFlow renders correctly.
+- Files changed:
+  - dashboard/package.json (added @xyflow/react dependency)
+  - dashboard/package-lock.json (lockfile updated)
+  - dashboard/src/app/globals.css (added `@import "@xyflow/react/dist/style.css"`)
+  - dashboard/src/components/flow/react-flow-test.tsx (new test component)
 - **Learnings for future iterations:**
-  - On Windows, `os.tmpdir()` and `os.homedir()` may be on different drives, so `renameSync` across them fails. Use a tmp file in the same directory as the target for atomic writes.
-  - Config merges with defaults on read, so adding new fields to DEFAULT_CONFIG is backward-compatible with existing config files.
-  - The module uses only Node.js built-in modules (fs, os, path, crypto) — no external dependencies needed.
----
-
-## 2026-03-02 23:45 - US-004
-- What was implemented: Interactive init wizard (Part 1) — src/commands/init.ts with Steps 0-3. Step 0: detect existing config and ask overwrite/keep/exit. Step 1: ASCII logo, version, permission declaration with confirm prompt. Step 2: Node.js version check (>= 18 required), Claude CLI detection (warns but allows continue). Step 3: Windows Git Bash path auto-detection and manual input (only on win32). Wired `runInit()` into ralph.ts `init` command.
-- Files changed: src/commands/init.ts (new), src/bin/ralph.ts (updated import and init action)
-- **Learnings for future iterations:**
-  - Inquirer.js v12 uses ESM and `inquirer.prompt<T>()` generic for typed answers
-  - chalk.hex('#6366f1') creates a brand color helper for consistent styling
-  - `execSync('where claude')` on Windows / `which claude` on Unix for CLI detection
-  - `platform()` from `node:os` for cross-platform branching (win32 check for Git Bash step)
-  - US-005 will continue init.ts with steps 4-8 (feishu, params, project, plugin, completion)
----
-
-## 2026-03-02 - US-005
-- What was implemented: Init wizard steps 4-8 in src/commands/init.ts. Step 4: Feishu webhook config (optional) with test message via fetch POST interactive card JSON, retry/skip on failure. Step 5: Run parameters (AI tool, max iterations, timeout, max failures) with defaults respecting overwrite/keep mode. Step 6: First project config (name + path validation, sets activeProject). Step 7: Claude Code plugin guidance text. Step 8: Completion summary (tree-formatted config display) and final writeConfig.
-- Files changed: src/commands/init.ts (added ~240 lines for steps 4-8, replaced US-005 placeholder)
-- **Learnings for future iterations:**
-  - Feishu webhook returns `{ code: 0 }` or `{ StatusCode: 0 }` on success — check both
-  - Node 18+ built-in `fetch` works fine for POST requests, no need for external HTTP library
-  - `action` variable ('overwrite'|'keep') from step 0 is threaded through to steps 5-6 to respect existing config values as defaults
-  - Inquirer `type: 'number'` returns number directly, no parsing needed
----
-
-## 2026-03-02 - US-006
-- What was implemented: Web console start/stop commands. `ralph start` reads config, checks port availability, launches Next.js server (standalone or `next start` fallback) and WebSocket server as child processes, sets RALPH_SCRIPTS_DIR env var, auto-opens browser (unless --no-open), handles Ctrl+C graceful shutdown (taskkill on Windows, SIGTERM on Unix). `ralph stop` finds and kills processes on configured ports. Auto-builds dashboard if .next/ not found.
-- Files changed: src/commands/start.ts (new), src/commands/stop.ts (new), src/bin/ralph.ts (wired start/stop commands with imports and options)
-- **Learnings for future iterations:**
-  - On Windows, child_process.spawn needs shell: true and .cmd binaries from node_modules/.bin
-  - net.createServer listen/error pattern is reliable for port-in-use detection
-  - taskkill /T /F kills the process tree on Windows (important for Next.js which spawns children)
-  - standalone server.js check allows graceful upgrade path when US-012 adds standalone output config
-  - Commander.js `--no-open` auto-creates `opts.open` as boolean (false when flag present)
----
-
-## 2026-03-03 - US-007
-- What was implemented: Web console config module refactoring. The config.ts was already mostly refactored in prior iterations (uses ~/.ralph/config.json, has DashboardConfig with all new fields, getActiveProjectPaths(), getRalphScriptPath()). The main fix was updating the WebSocket server (ws.ts) which still referenced non-existent config.prdPath and config.progressPath fields. Replaced with getActiveProjectPaths() pattern matching all API routes.
-- Files changed: dashboard/server/ws.ts (refactored file watching to use getActiveProjectPaths())
-- **Learnings for future iterations:**
-  - Most of US-007's acceptance criteria were already satisfied by prior stories — always check current state before implementing
-  - ws.ts is the only file that runs outside Next.js (standalone TypeScript via tsx), so it imports from relative paths not @/lib/ aliases
-  - The chokidar watcher needs cleanup (close old watcher) when switching projects — setupFileWatcher() pattern supports re-initialization
-  - All 13 API routes already used getActiveProjectPaths() correctly; only ws.ts was using the old config.prdPath/progressPath pattern
----
-
-## 2026-03-03 - US-008
-- What was implemented: Multi-project management data model and API. Created 4 API routes: GET /api/projects (list projects + active), POST /api/projects (add project with path validation), PUT /api/projects/active (switch active project), DELETE /api/projects/[name] (remove project from config). Created CLI `ralph add-project` interactive command using Inquirer.js. ralph/start already used getActiveProjectPaths() for cwd — no changes needed.
-- Files changed: dashboard/src/app/api/projects/route.ts (new), dashboard/src/app/api/projects/active/route.ts (new), dashboard/src/app/api/projects/[name]/route.ts (new), src/commands/add-project.ts (new), src/bin/ralph.ts (wired add-project import)
-- **Learnings for future iterations:**
-  - Next.js 16 dynamic route params are async: `{ params }: { params: Promise<{ name: string }> }` — must await params
-  - ralph-process.ts already uses getActiveProjectPaths()?.projectPath as cwd, so US-008's "ralph/start cwd" requirement was already met
-  - URL-encoded project names in DELETE route need decodeURIComponent() for names with special chars
-  - Pre-existing lint errors (7 total) in ws.ts, logs/page.tsx, story components, use-websocket.ts — not related to new code
----
-
-## 2026-03-03 - US-009
-- What was implemented: Multi-project management Web UI. Created project-switcher.tsx component with: custom dropdown menu showing all projects with checkmark on active project, project switching via PUT /api/projects/active with data refresh (setPrd(null) for skeleton transition then re-fetch), "Add project" dialog with name/path inputs using shadcn/ui Dialog, empty state with dashed border prompt "点击添加你的第一个项目". Integrated into sidebar.tsx below the logo section.
-- Files changed: dashboard/src/components/project-switcher.tsx (new), dashboard/src/components/sidebar.tsx (added ProjectSwitcher import and placement)
-- **Learnings for future iterations:**
-  - Used custom dropdown instead of Radix Select because we need a non-standard layout (project list + separator + "add" button at bottom)
-  - Project switch triggers setPrd(null) to show skeleton loading state, then re-fetches /api/prd for new project data
-  - Click-outside-to-close uses a fixed inset-0 overlay with z-40 (dropdown at z-50)
-  - toast from sonner provides feedback for switch/add operations
-  - The dialog component needs DialogDescription for accessibility (otherwise Radix warns)
----
-
-## 2026-03-03 - US-010
-- What was implemented: Settings page expansion with full config management. Replaced old Path Configuration section with 4 new grouped cards: Notification (Feishu Webhook URL with password toggle + test button), Fault Tolerance (timeout, max failures, retry interval), Environment (Git Bash path on Windows only, AI tool, max iterations), Interface (terminal font size preserved). Created POST /api/config/test-webhook API route that sends Feishu interactive card test message. SettingsConfig interface updated to match DashboardConfig fields.
-- Files changed: dashboard/src/app/(dashboard)/settings/page.tsx (rewritten), dashboard/src/app/api/config/test-webhook/route.ts (new)
-- **Learnings for future iterations:**
-  - Feishu webhook API returns `{ code: 0 }` or `{ StatusCode: 0 }` on success — check both patterns
-  - Windows detection in client components uses `navigator.platform?.startsWith("Win")` since `process.platform` is server-only
-  - The card gradient left-border style is reused across all settings cards — extracted to `cardStyle` const
-  - Input className pattern for dark theme consistency is `bg-zinc-950 border-zinc-700 focus:ring-cyan-500/30 focus:border-cyan-500/50`
----
-
-## 2026-03-03 - US-011
-- What was implemented: ralph.sh config file integration with ~/.ralph/config.json. Added config reading block after argument parsing using `jq`. Reads defaultTool, defaultMaxIterations, timeoutMinutes, webhookUrl, maxConsecutiveFailures, retryIntervalSeconds, and gitBashPath from config. CLI arguments tracked via _CLI_* flags to ensure they always override config values. Replaced hardcoded `sleep 3600` retry waits with configurable `$RETRY_INTERVAL_SECONDS`. Moved MAX_CONSECUTIVE_FAILURES default to top of script so config can override it. Silent fallback when jq is not available (`command -v jq`).
-- Files changed: scripts/ralph/ralph.sh (config reading block, CLI tracking flags, configurable retry interval)
-- **Learnings for future iterations:**
-  - `command -v jq &>/dev/null` is the portable way to check if jq is available in bash
-  - `jq -r '.field // empty'` returns empty string for null/missing fields — perfect for bash conditional checks
-  - Track CLI-explicit args with flag variables (_CLI_TOOL etc.) to distinguish "user passed --tool amp" from "default value amp"
-  - Config reading is placed between argument parsing and tool validation so config values are validated too
----
-
-## 2026-03-03 - US-012
-- What was implemented: npm publish build process. Configured next.config.ts with output: 'standalone' for reduced bundle size. Added prepublishOnly script to root package.json (tsc + dashboard build). Refined files field to precisely list published files (dist/, dashboard/.next/standalone/, dashboard/.next/static/, dashboard/public/, specific scripts/ralph/ files). Created dashboard/.npmignore to override .gitignore and include .next/ build output. Created root .npmignore for additional exclusions. Fixed start.ts standalone path detection to handle both direct and nested server.js locations (workspace root detection by Next.js changes the output path). Verified npm pack produces correct 84-file package (~623KB), global install works, ralph --help and --version pass.
-- Files changed: dashboard/next.config.ts (added output: 'standalone'), package.json (prepublishOnly script, refined files), .npmignore (new), dashboard/.npmignore (new), src/commands/start.ts (dual standalone path detection)
-- **Learnings for future iterations:**
-  - Next.js standalone output path depends on workspace root detection — when multiple lockfiles exist, server.js may end up at .next/standalone/dashboard/server.js instead of .next/standalone/server.js
-  - npm `files` field is a whitelist but nested .gitignore files still apply — need dashboard/.npmignore to override dashboard/.gitignore's exclusion of .next/
-  - Using specific file paths in `files` (e.g., "scripts/ralph/ralph.sh") is more precise than directory globs for excluding runtime data
-  - npm pack --dry-run is essential for verifying package contents before publishing
-  - Global install from tgz (npm install -g ./file.tgz) is the definitive test for publish readiness
+  - @xyflow/react styles must be imported globally via `@import "@xyflow/react/dist/style.css"` in globals.css
+  - ReactFlow components require `"use client"` directive in Next.js App Router
+  - The `flow/` directory under components is where all flow-related components should live
+  - ReactFlow container needs explicit width/height to render properly
 ---
