@@ -1,3 +1,5 @@
+export type StoryStatus = "pending" | "running" | "completed" | "failed";
+
 export interface Story {
   id: string;
   title: string;
@@ -6,6 +8,9 @@ export interface Story {
   priority: number;
   passes: boolean;
   notes: string;
+  startedAt?: string;
+  completedAt?: string;
+  status?: StoryStatus;
 }
 
 export interface PRD {
