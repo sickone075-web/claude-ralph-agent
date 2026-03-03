@@ -4,4 +4,25 @@ dist/
 .env.local
 *.log
 .DS_Store
+
+# Claude Code local project config
+.claude/
+
+# Ralph runtime files
 scripts/ralph/.ralph-pid
+scripts/ralph/.last-branch
+scripts/ralph/.ralph-output-tmp
+scripts/ralph/archive/
+tasks/
+
+# Local dev scripts
+scripts/ralph/ralph-dev.sh
+
+# Dashboard runtime config
+dashboard/config.json
+
+# Pencil design files
+*.pen
+
+# Windows artifacts
+nul
