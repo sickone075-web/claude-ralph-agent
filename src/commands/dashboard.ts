@@ -14,7 +14,7 @@ const __dirname = dirname(__filename);
 const brand = chalk.hex('#6366f1');
 
 function getDashboardDir(): string {
-  // From dist/commands/start.js -> project root -> dashboard/
+  // From dist/commands/dashboard.js -> project root -> dashboard/
   return resolve(__dirname, '../../dashboard');
 }
 
@@ -34,33 +34,7 @@ function isPortInUse(port: number): Promise<boolean> {
   });
 }
 
-function findProcessOnPort(port: number): string | null {
-  const isWin = platform() === 'win32';
-  try {
-    if (isWin) {
-      const output = execSync(`netstat -ano | findstr :${port} | findstr LISTENING`, {
-        encoding: 'utf-8',
-        stdio: ['pipe', 'pipe', 'pipe'],
-      });
-      const lines = output.trim().split('\n');
-      if (lines.length > 0) {
-        const parts = lines[0].trim().split(/\s+/);
-        return parts[parts.length - 1]; // PID
-      }
-    } else {
-      const output = execSync(`lsof -ti :${port}`, {
-        encoding: 'utf-8',
-        stdio: ['pipe', 'pipe', 'pipe'],
-      });
-      return output.trim().split('\n')[0];
-    }
-  } catch {
-    // Command failed — no process found
-  }
-  return null;
-}
-
-export async function runStart(options: { open?: boolean }): Promise<void> {
+export async function runDashboard(options: { open?: boolean }): Promise<void> {
   const configPath = getConfigPath();
   if (!existsSync(configPath)) {
     console.log(chalk.yellow('⚠ 未找到配置文件，请先运行 ralph init'));
@@ -85,14 +59,14 @@ export async function runStart(options: { open?: boolean }): Promise<void> {
   const portInUse = await isPortInUse(port);
   if (portInUse) {
     console.log(chalk.red(`✗ 端口 ${port} 已被占用`));
-    console.log(chalk.gray('  请先运行 ralph stop 或关闭占用端口的进程'));
+    console.log(chalk.gray('  请关闭占用端口的进程后重试'));
     process.exit(1);
   }
 
   const wsPortInUse = await isPortInUse(wsPort);
   if (wsPortInUse) {
     console.log(chalk.red(`✗ WebSocket 端口 ${wsPort} 已被占用`));
-    console.log(chalk.gray('  请先运行 ralph stop 或关闭占用端口的进程'));
+    console.log(chalk.gray('  请关闭占用端口的进程后重试'));
     process.exit(1);
   }
 

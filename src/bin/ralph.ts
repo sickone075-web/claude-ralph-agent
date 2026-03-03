@@ -4,8 +4,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import { runInit } from '../commands/init.js';
-import { runStart } from '../commands/start.js';
-import { runStop } from '../commands/stop.js';
+import { runDashboard } from '../commands/dashboard.js';
 import { runAddProject } from '../commands/add-project.js';
 import { runAddRepo } from '../commands/add-repo.js';
 import { runRemoveRepo } from '../commands/remove-repo.js';
@@ -33,18 +32,11 @@ program
   });
 
 program
-  .command('start')
+  .command('dashboard')
   .description('启动 Web 控制台')
   .option('--no-open', '不自动打开浏览器')
   .action(async (opts) => {
-    await runStart({ open: opts.open });
-  });
-
-program
-  .command('stop')
-  .description('停止 Web 控制台')
-  .action(async () => {
-    await runStop();
+    await runDashboard({ open: opts.open });
   });
 
 program
