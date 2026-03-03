@@ -156,3 +156,16 @@ Started: 2026年03月 2日 22:51:22
   - RepoConfig uses union types for `type` field: 'docs'|'backend'|'frontend'|'app'|'other'
   - Optional `repositories?` field ensures backward compatibility — existing single-repo projects need no changes
 ---
+
+## 2026-03-03 - US-002 (multi-repo-support)
+- What was implemented: `ralph add-repo` CLI command for interactively adding repository configurations to the active project
+- Files changed:
+  - src/commands/add-repo.ts (new) - Interactive prompts for repo name, path, type, priority, checks
+  - src/bin/ralph.ts - Imported and registered add-repo command
+- **Learnings for future iterations:**
+  - Follow add-project.ts pattern: read config, validate active project, prompt inputs, write config
+  - RepoConfig type import from global-config.ts works for type-safe prompt choices
+  - `inquirer.prompt` with `type: 'list'` for enum-like selections (repo type), `type: 'number'` for priority
+  - docs repos default priority to 0, others to 1 — matches US-007 execution ordering (lower runs first)
+  - Empty checks input is filtered out with `.filter(Boolean)` after split/trim
+---

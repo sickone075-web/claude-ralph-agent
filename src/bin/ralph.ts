@@ -7,6 +7,7 @@ import { runInit } from '../commands/init.js';
 import { runStart } from '../commands/start.js';
 import { runStop } from '../commands/stop.js';
 import { runAddProject } from '../commands/add-project.js';
+import { runAddRepo } from '../commands/add-repo.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -56,6 +57,13 @@ program
   .description('添加项目')
   .action(async () => {
     await runAddProject();
+  });
+
+program
+  .command('add-repo')
+  .description('为当前活跃项目添加仓库')
+  .action(async () => {
+    await runAddRepo();
   });
 
 program.action(() => {
