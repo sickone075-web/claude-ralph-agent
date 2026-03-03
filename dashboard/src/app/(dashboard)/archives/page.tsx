@@ -12,8 +12,25 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { KanbanBoard } from "@/components/kanban-board";
+import { StoryFlow } from "@/components/flow/story-flow";
 import type { ArchiveItem, ArchiveDetail, ProgressLogData } from "@/lib/types";
+
+// Height constants matching story-flow.tsx
+const START_NODE_HEIGHT = 200;
+const STORY_NODE_HEIGHT = 80;
+const END_NODE_HEIGHT = 100;
+const NODE_GAP = 100;
+const FLOW_PADDING = 80; // extra padding for fitView margins
+
+function calcFlowHeight(storyCount: number): number {
+  return (
+    START_NODE_HEIGHT +
+    NODE_GAP +
+    storyCount * (STORY_NODE_HEIGHT + NODE_GAP) +
+    END_NODE_HEIGHT +
+    FLOW_PADDING
+  );
+}
 
 export default function ArchivesPage() {
   const [archives, setArchives] = useState<ArchiveItem[]>([]);
@@ -195,11 +212,23 @@ export default function ArchivesPage() {
                               </p>
                             )}
 
-                            {/* Read-only Kanban */}
-                            <KanbanBoard
-                              stories={archiveDetail.prd.userStories}
-                              readOnly
-                            />
+                            {/* Read-only Flow */}
+                            <div
+                              style={{
+                                height: calcFlowHeight(
+                                  archiveDetail.prd.userStories.length
+                                ),
+                              }}
+                            >
+                              <StoryFlow
+                                stories={archiveDetail.prd.userStories}
+                                projectName={archiveDetail.prd.project}
+                                description={archiveDetail.prd.description || ""}
+                                branchName={archiveDetail.prd.branchName}
+                                ralphStatus="idle"
+                                readOnly
+                              />
+                            </div>
                           </div>
                         )}
 
