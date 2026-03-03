@@ -110,3 +110,23 @@ Started: 2026年03月 2日 22:51:22
   - toast from sonner provides feedback for switch/add operations
   - The dialog component needs DialogDescription for accessibility (otherwise Radix warns)
 ---
+
+## 2026-03-03 - US-010
+- What was implemented: Settings page expansion with full config management. Replaced old Path Configuration section with 4 new grouped cards: Notification (Feishu Webhook URL with password toggle + test button), Fault Tolerance (timeout, max failures, retry interval), Environment (Git Bash path on Windows only, AI tool, max iterations), Interface (terminal font size preserved). Created POST /api/config/test-webhook API route that sends Feishu interactive card test message. SettingsConfig interface updated to match DashboardConfig fields.
+- Files changed: dashboard/src/app/(dashboard)/settings/page.tsx (rewritten), dashboard/src/app/api/config/test-webhook/route.ts (new)
+- **Learnings for future iterations:**
+  - Feishu webhook API returns `{ code: 0 }` or `{ StatusCode: 0 }` on success — check both patterns
+  - Windows detection in client components uses `navigator.platform?.startsWith("Win")` since `process.platform` is server-only
+  - The card gradient left-border style is reused across all settings cards — extracted to `cardStyle` const
+  - Input className pattern for dark theme consistency is `bg-zinc-950 border-zinc-700 focus:ring-cyan-500/30 focus:border-cyan-500/50`
+---
+
+## 2026-03-03 - US-011
+- What was implemented: ralph.sh config file integration with ~/.ralph/config.json. Added config reading block after argument parsing using `jq`. Reads defaultTool, defaultMaxIterations, timeoutMinutes, webhookUrl, maxConsecutiveFailures, retryIntervalSeconds, and gitBashPath from config. CLI arguments tracked via _CLI_* flags to ensure they always override config values. Replaced hardcoded `sleep 3600` retry waits with configurable `$RETRY_INTERVAL_SECONDS`. Moved MAX_CONSECUTIVE_FAILURES default to top of script so config can override it. Silent fallback when jq is not available (`command -v jq`).
+- Files changed: scripts/ralph/ralph.sh (config reading block, CLI tracking flags, configurable retry interval)
+- **Learnings for future iterations:**
+  - `command -v jq &>/dev/null` is the portable way to check if jq is available in bash
+  - `jq -r '.field // empty'` returns empty string for null/missing fields — perfect for bash conditional checks
+  - Track CLI-explicit args with flag variables (_CLI_TOOL etc.) to distinguish "user passed --tool amp" from "default value amp"
+  - Config reading is placed between argument parsing and tool validation so config values are validated too
+---

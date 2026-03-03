@@ -12,42 +12,97 @@ TOOL="amp"  # Default to amp for backwards compatibility
 MAX_ITERATIONS=10
 TIMEOUT_MINUTES=30
 WEBHOOK_URL=""
+MAX_CONSECUTIVE_FAILURES=5
+RETRY_INTERVAL_SECONDS=3600
+
+# Track which arguments were explicitly set via CLI
+_CLI_TOOL=""
+_CLI_MAX_ITERATIONS=""
+_CLI_TIMEOUT=""
+_CLI_WEBHOOK=""
 
 while [[ $# -gt 0 ]]; do
   case $1 in
     --tool)
       TOOL="$2"
+      _CLI_TOOL=1
       shift 2
       ;;
     --tool=*)
       TOOL="${1#*=}"
+      _CLI_TOOL=1
       shift
       ;;
     --timeout)
       TIMEOUT_MINUTES="$2"
+      _CLI_TIMEOUT=1
       shift 2
       ;;
     --timeout=*)
       TIMEOUT_MINUTES="${1#*=}"
+      _CLI_TIMEOUT=1
       shift
       ;;
     --webhook)
       WEBHOOK_URL="$2"
+      _CLI_WEBHOOK=1
       shift 2
       ;;
     --webhook=*)
       WEBHOOK_URL="${1#*=}"
+      _CLI_WEBHOOK=1
       shift
       ;;
     *)
       # Assume it's max_iterations if it's a number
       if [[ "$1" =~ ^[0-9]+$ ]]; then
         MAX_ITERATIONS="$1"
+        _CLI_MAX_ITERATIONS=1
       fi
       shift
       ;;
   esac
 done
+
+# Read defaults from ~/.ralph/config.json if available
+# CLI arguments always override config file values
+RALPH_CONFIG_FILE="$HOME/.ralph/config.json"
+if [[ -f "$RALPH_CONFIG_FILE" ]] && command -v jq &>/dev/null; then
+  _cfg_val=""
+
+  if [[ -z "$_CLI_TOOL" ]]; then
+    _cfg_val="$(jq -r '.defaultTool // empty' "$RALPH_CONFIG_FILE" 2>/dev/null)"
+    [[ -n "$_cfg_val" ]] && TOOL="$_cfg_val"
+  fi
+
+  if [[ -z "$_CLI_MAX_ITERATIONS" ]]; then
+    _cfg_val="$(jq -r '.defaultMaxIterations // empty' "$RALPH_CONFIG_FILE" 2>/dev/null)"
+    [[ -n "$_cfg_val" ]] && MAX_ITERATIONS="$_cfg_val"
+  fi
+
+  if [[ -z "$_CLI_TIMEOUT" ]]; then
+    _cfg_val="$(jq -r '.timeoutMinutes // empty' "$RALPH_CONFIG_FILE" 2>/dev/null)"
+    [[ -n "$_cfg_val" ]] && TIMEOUT_MINUTES="$_cfg_val"
+  fi
+
+  if [[ -z "$_CLI_WEBHOOK" ]]; then
+    _cfg_val="$(jq -r '.webhookUrl // empty' "$RALPH_CONFIG_FILE" 2>/dev/null)"
+    [[ -n "$_cfg_val" ]] && WEBHOOK_URL="$_cfg_val"
+  fi
+
+  # Additional config fields (no CLI override for these)
+  _cfg_val="$(jq -r '.maxConsecutiveFailures // empty' "$RALPH_CONFIG_FILE" 2>/dev/null)"
+  [[ -n "$_cfg_val" ]] && MAX_CONSECUTIVE_FAILURES="$_cfg_val"
+
+  _cfg_val="$(jq -r '.retryIntervalSeconds // empty' "$RALPH_CONFIG_FILE" 2>/dev/null)"
+  [[ -n "$_cfg_val" ]] && RETRY_INTERVAL_SECONDS="$_cfg_val"
+
+  _cfg_val="$(jq -r '.gitBashPath // empty' "$RALPH_CONFIG_FILE" 2>/dev/null)"
+  [[ -n "$_cfg_val" ]] && export CLAUDE_CODE_GIT_BASH_PATH="$_cfg_val"
+
+  unset _cfg_val
+fi
+unset _CLI_TOOL _CLI_MAX_ITERATIONS _CLI_TIMEOUT _CLI_WEBHOOK
 
 # Validate tool choice
 if [[ "$TOOL" != "amp" && "$TOOL" != "claude" ]]; then
@@ -324,7 +379,6 @@ fi
 # 主循环：while 循环，手动管理迭代计数器
 i=1
 consecutive_failures=0
-MAX_CONSECUTIVE_FAILURES=5
 
 while [[ $i -le $MAX_ITERATIONS ]]; do
   echo ""
@@ -360,8 +414,8 @@ while [[ $i -le $MAX_ITERATIONS ]]; do
       exit 2
     fi
 
-    log "INFO" "等待 1 小时后重试迭代 $i ..."
-    sleep 3600
+    log "INFO" "等待 ${RETRY_INTERVAL_SECONDS} 秒后重试迭代 $i ..."
+    sleep "$RETRY_INTERVAL_SECONDS"
     continue
   fi
 
@@ -377,8 +431,8 @@ while [[ $i -le $MAX_ITERATIONS ]]; do
       exit 2
     fi
 
-    log "INFO" "等待 1 小时后重试迭代 $i ..."
-    sleep 3600
+    log "INFO" "等待 ${RETRY_INTERVAL_SECONDS} 秒后重试迭代 $i ..."
+    sleep "$RETRY_INTERVAL_SECONDS"
     continue
   fi
 

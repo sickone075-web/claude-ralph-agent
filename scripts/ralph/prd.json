@@ -186,8 +186,8 @@
         "使用 dev-browser skill 在浏览器中验证"
       ],
       "priority": 10,
-      "passes": false,
-      "notes": "依赖 US-007 的配置模块重构。test-webhook API 使用 fetch POST 飞书 interactive 卡片 JSON。"
+      "passes": true,
+      "notes": "依赖 US-007 的配置模块重构。test-webhook API 使用 fetch POST 飞书 interactive 卡片 JSON。设置页重构为 4 个分组：通知配置（飞书 Webhook + 测试按钮）、容错配置、环境配置（Git Bash 仅 Windows 显示）、界面。移除了旧的路径配置分组。"
     },
     {
       "id": "US-011",
@@ -202,8 +202,8 @@
         "bash -n ralph.sh 语法检查通过"
       ],
       "priority": 11,
-      "passes": false,
-      "notes": "依赖 US-003 的配置结构定义。jq 命令示例：jq -r '.defaultTool // empty' ~/.ralph/config.json"
+      "passes": true,
+      "notes": "依赖 US-003 的配置结构定义。jq 命令示例：jq -r '.defaultTool // empty' ~/.ralph/config.json。配置读取放在参数解析之后、主循环之前，CLI 参数通过 _CLI_* 标志跟踪以确保覆盖配置文件值。retryIntervalSeconds 和 maxConsecutiveFailures 也从配置读取。"
     },
     {
       "id": "US-012",
