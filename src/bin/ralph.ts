@@ -8,6 +8,7 @@ import { runStart } from '../commands/start.js';
 import { runStop } from '../commands/stop.js';
 import { runAddProject } from '../commands/add-project.js';
 import { runAddRepo } from '../commands/add-repo.js';
+import { runRemoveRepo } from '../commands/remove-repo.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -64,6 +65,13 @@ program
   .description('为当前活跃项目添加仓库')
   .action(async () => {
     await runAddRepo();
+  });
+
+program
+  .command('remove-repo')
+  .description('从当前活跃项目移除仓库')
+  .action(async () => {
+    await runRemoveRepo();
   });
 
 program.action(() => {
