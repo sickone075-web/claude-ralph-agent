@@ -172,8 +172,8 @@
         "使用 dev-browser skill 在浏览器中验证"
       ],
       "priority": 10,
-      "passes": false,
-      "notes": "StoryFlow 组件需要支持 readOnly 模式和自适应高度（非全屏模式）。可能需要额外的 compact 或 inline 模式 prop。"
+      "passes": true,
+      "notes": "StoryFlow already supports readOnly mode. Height auto-calculated using flow constants (START_NODE_HEIGHT + stories * (STORY_NODE_HEIGHT + NODE_GAP) + END_NODE_HEIGHT + padding)."
     }
   ]
 }

@@ -127,3 +127,14 @@ Started: Tue Mar  3 11:21:16     2026
   - Archive viewing state is local to the page (useState), not in the zustand store — keeps store focused on real-time data
   - When `isViewingArchive`, pass `ralphStatus="idle"` and `readOnly=true` to StoryFlow to suppress animations
 ---
+
+## 2026-03-03 - US-010
+- What was implemented: Replaced KanbanBoard with StoryFlow component in archive page. Added auto-height calculation using flow layout constants (START_NODE_HEIGHT, STORY_NODE_HEIGHT, NODE_GAP, END_NODE_HEIGHT) to size the container based on story count. Passes `readOnly=true` and `ralphStatus="idle"` so nodes show final archived state without animations.
+- Files changed:
+  - dashboard/src/app/(dashboard)/archives/page.tsx (replaced KanbanBoard import/usage with StoryFlow + height calculation)
+- **Learnings for future iterations:**
+  - StoryFlow already fully supports readOnly mode — no additional compact/inline prop needed, just a properly sized container
+  - ReactFlow container height for inline usage: `START_NODE_HEIGHT + NODE_GAP + stories * (STORY_NODE_HEIGHT + NODE_GAP) + END_NODE_HEIGHT + FLOW_PADDING`
+  - `fitView` in StoryFlow automatically adapts content to container size, so calculated height is approximate
+  - Archive PRD data provides all props needed for StoryFlow: project, description, branchName, userStories
+---
