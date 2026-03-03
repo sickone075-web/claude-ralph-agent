@@ -1,4 +1,6 @@
 import { spawn, ChildProcess, execSync } from "child_process";
+import fs from "fs";
+import path from "path";
 import { getRalphScriptPath, getActiveProjectPaths } from "./config";
 
 export type RalphStatus = "idle" | "running" | "completed" | "error";
@@ -21,7 +23,61 @@ const state: RalphState = {
 
 const ITERATION_REGEX = /Ralph Iteration (\d+) of (\d+)/;
 
+export function getPidFilePath(): string | null {
+  const projectPaths = getActiveProjectPaths();
+  if (!projectPaths) {
+    return null;
+  }
+  return path.join(projectPaths.projectPath, "scripts", "ralph", ".ralph-pid");
+}
+
+export function detectRunningFromPid(): { running: boolean; pid: number | null } {
+  const pidPath = getPidFilePath();
+  if (!pidPath) {
+    return { running: false, pid: null };
+  }
+
+  try {
+    if (!fs.existsSync(pidPath)) {
+      return { running: false, pid: null };
+    }
+
+    const pidStr = fs.readFileSync(pidPath, "utf-8").trim();
+    const pid = parseInt(pidStr, 10);
+    if (isNaN(pid)) {
+      return { running: false, pid: null };
+    }
+
+    // process.kill(pid, 0) throws if process doesn't exist
+    process.kill(pid, 0);
+    return { running: true, pid };
+  } catch {
+    return { running: false, pid: null };
+  }
+}
+
 export function getRalphStatus() {
+  // If we have an in-memory process, use that state
+  if (state.process !== null) {
+    return {
+      status: state.status,
+      iteration: state.iteration,
+      startedAt: state.startedAt,
+    };
+  }
+
+  // Fallback: check PID file for externally started ralph
+  if (state.status !== "running") {
+    const pidCheck = detectRunningFromPid();
+    if (pidCheck.running) {
+      return {
+        status: "running" as RalphStatus,
+        iteration: state.iteration,
+        startedAt: state.startedAt,
+      };
+    }
+  }
+
   return {
     status: state.status,
     iteration: state.iteration,
@@ -30,7 +86,11 @@ export function getRalphStatus() {
 }
 
 export function isRunning(): boolean {
-  return state.status === "running" && state.process !== null;
+  if (state.status === "running" && state.process !== null) {
+    return true;
+  }
+  // Also check PID file for externally started processes
+  return detectRunningFromPid().running;
 }
 
 export function startRalph(params: {

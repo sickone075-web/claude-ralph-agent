@@ -1,7 +1,7 @@
 import { WebSocketServer, WebSocket } from "ws";
 import { watch, FSWatcher } from "chokidar";
 import path from "path";
-import { onEvent, sendStdin } from "../src/lib/ralph-process";
+import { onEvent, sendStdin, getPidFilePath, detectRunningFromPid } from "../src/lib/ralph-process";
 import { getActiveProjectPaths } from "../src/lib/config";
 
 const PORT = 3001;
@@ -49,6 +49,12 @@ function setupFileWatcher() {
   const filesToWatch = [projectPaths.prdPath, projectPaths.progressPath];
   currentPrdPath = projectPaths.prdPath;
 
+  // Also watch the PID file for external start/stop detection
+  const pidPath = getPidFilePath();
+  if (pidPath) {
+    filesToWatch.push(pidPath);
+  }
+
   currentWatcher = watch(filesToWatch, {
     ignoreInitial: true,
     awaitWriteFinish: {
@@ -59,6 +65,16 @@ function setupFileWatcher() {
 
   currentWatcher.on("change", (filePath: string) => {
     const normalized = path.resolve(filePath);
+
+    // PID file change → broadcast ralph:status
+    if (pidPath && normalized === path.resolve(pidPath)) {
+      const pidCheck = detectRunningFromPid();
+      broadcast("ralph:status", {
+        status: pidCheck.running ? "running" : "idle",
+      });
+      return;
+    }
+
     const eventType = currentPrdPath && normalized === path.resolve(currentPrdPath)
       ? "prd:updated"
       : "progress:updated";
@@ -72,6 +88,23 @@ function setupFileWatcher() {
       broadcast(eventType, { file: normalized });
       delete debounceTimers[normalized];
     }, 500);
+  });
+
+  // PID file created → ralph started externally
+  currentWatcher.on("add", (filePath: string) => {
+    if (pidPath && path.resolve(filePath) === path.resolve(pidPath)) {
+      const pidCheck = detectRunningFromPid();
+      if (pidCheck.running) {
+        broadcast("ralph:status", { status: "running" });
+      }
+    }
+  });
+
+  // PID file deleted → ralph stopped
+  currentWatcher.on("unlink", (filePath: string) => {
+    if (pidPath && path.resolve(filePath) === path.resolve(pidPath)) {
+      broadcast("ralph:status", { status: "idle" });
+    }
   });
 
   console.log("[WS] Watching files:", filesToWatch);
