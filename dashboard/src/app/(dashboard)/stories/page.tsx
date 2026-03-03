@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   DragDropContext,
   Droppable,
@@ -10,6 +10,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,9 +29,23 @@ import {
   Circle,
   GripVertical,
   Trash2,
+  FileText,
+  Server,
+  Globe,
+  Package,
+  Database,
 } from "lucide-react";
 import { useDashboardStore } from "@/lib/store";
-import type { Story } from "@/lib/types";
+import type { Story, PRD } from "@/lib/types";
+import type { RepoStatus } from "@/app/api/repos/route";
+
+const typeIcons: Record<string, typeof Database> = {
+  docs: FileText,
+  backend: Server,
+  frontend: Globe,
+  app: Package,
+  other: Database,
+};
 
 function getPriorityColor(priority: number): string {
   if (priority <= 3) return "border-l-red-500";
@@ -47,25 +62,80 @@ function getPriorityTag(priority: number): { label: string; className: string } 
 }
 
 export default function StoriesPage() {
-  const prd = useDashboardStore((s) => s.prd);
-  const setPrd = useDashboardStore((s) => s.setPrd);
+  const storePrd = useDashboardStore((s) => s.prd);
+  const setStorePrd = useDashboardStore((s) => s.setPrd);
 
+  const [repos, setRepos] = useState<RepoStatus[] | null>(null);
+  const [selectedRepo, setSelectedRepo] = useState<string | null>(null);
+  const [repoPrd, setRepoPrd] = useState<PRD | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editingStory, setEditingStory] = useState<Story | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Story | null>(null);
+
+  // Fetch repos on mount
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchRepos() {
+      try {
+        const res = await fetch("/api/repos");
+        const json = await res.json();
+        if (!cancelled && json.data) {
+          // Only include repos that have stories (totalStories > 0 means prd.json exists)
+          const reposWithPrd = (json.data as RepoStatus[]).filter((r) => r.totalStories > 0);
+          if (reposWithPrd.length > 0) {
+            setRepos(reposWithPrd);
+            setSelectedRepo(reposWithPrd[0].name);
+          }
+        }
+      } catch {
+        // ignore — single repo mode
+      }
+    }
+    fetchRepos();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Determine if multi-repo mode
+  const isMultiRepo = repos !== null && repos.length > 0;
+
+  // Current PRD: use repo-specific or store's
+  const prd = isMultiRepo ? repoPrd : storePrd;
+  const setPrd = isMultiRepo ? setRepoPrd : setStorePrd;
+
+  // Build repo query param
+  const repoParam = isMultiRepo && selectedRepo ? `?repo=${encodeURIComponent(selectedRepo)}` : "";
+
+  // Fetch repo-specific PRD when repo changes
+  useEffect(() => {
+    if (!isMultiRepo || !selectedRepo) return;
+    let cancelled = false;
+    async function fetchRepoPrd() {
+      try {
+        const res = await fetch(`/api/prd?repo=${encodeURIComponent(selectedRepo!)}`);
+        const json = await res.json();
+        if (!cancelled && json.data) {
+          setRepoPrd(json.data);
+        }
+      } catch {
+        if (!cancelled) setRepoPrd(null);
+      }
+    }
+    fetchRepoPrd();
+    return () => { cancelled = true; };
+  }, [isMultiRepo, selectedRepo]);
 
   const stories = prd?.userStories ?? [];
   const sortedStories = [...stories].sort((a, b) => a.priority - b.priority);
 
   const refreshPrd = useCallback(async () => {
     try {
-      const res = await fetch("/api/prd");
+      const res = await fetch(`/api/prd${repoParam}`);
       const json = await res.json();
       if (json.data) setPrd(json.data);
     } catch {
       // ignore
     }
-  }, [setPrd]);
+  }, [setPrd, repoParam]);
 
   function handleNew() {
     setEditingStory(null);
@@ -80,13 +150,13 @@ export default function StoriesPage() {
   async function handleSave(data: Partial<Story> & { title: string }) {
     try {
       if (data.id) {
-        await fetch(`/api/prd/stories/${data.id}`, {
+        await fetch(`/api/prd/stories/${data.id}${repoParam}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(data),
         });
       } else {
-        await fetch("/api/prd/stories", {
+        await fetch(`/api/prd/stories${repoParam}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(data),
@@ -100,7 +170,7 @@ export default function StoriesPage() {
 
   async function handleTogglePasses(story: Story) {
     try {
-      await fetch(`/api/prd/stories/${story.id}`, {
+      await fetch(`/api/prd/stories/${story.id}${repoParam}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ passes: !story.passes }),
@@ -114,7 +184,7 @@ export default function StoriesPage() {
   async function handleDelete() {
     if (!deleteTarget) return;
     try {
-      await fetch(`/api/prd/stories/${deleteTarget.id}`, {
+      await fetch(`/api/prd/stories/${deleteTarget.id}${repoParam}`, {
         method: "DELETE",
       });
       setDeleteTarget(null);
@@ -141,7 +211,7 @@ export default function StoriesPage() {
       }));
 
       try {
-        await fetch("/api/prd/stories/reorder", {
+        await fetch(`/api/prd/stories/reorder${repoParam}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(reorderPayload),
@@ -151,7 +221,7 @@ export default function StoriesPage() {
         // ignore
       }
     },
-    [sortedStories, refreshPrd]
+    [sortedStories, refreshPrd, repoParam]
   );
 
   return (
@@ -169,6 +239,29 @@ export default function StoriesPage() {
           新建故事
         </Button>
       </div>
+
+      {isMultiRepo && (
+        <Tabs
+          value={selectedRepo ?? undefined}
+          onValueChange={setSelectedRepo}
+          className="mb-4"
+        >
+          <TabsList variant="line">
+            {repos.map((repo) => {
+              const Icon = typeIcons[repo.type] ?? Database;
+              return (
+                <TabsTrigger key={repo.name} value={repo.name}>
+                  <Icon className="h-3.5 w-3.5" />
+                  {repo.name}
+                  <span className="text-xs text-zinc-500 ml-1">
+                    {repo.completedStories}/{repo.totalStories}
+                  </span>
+                </TabsTrigger>
+              );
+            })}
+          </TabsList>
+        </Tabs>
+      )}
 
       <DragDropContext onDragEnd={handleDragEnd}>
         <Droppable droppableId="stories">

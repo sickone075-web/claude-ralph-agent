@@ -9,6 +9,7 @@ interface ReorderItem {
 
 export async function PATCH(request: Request) {
   try {
+    const repo = new URL(request.url).searchParams.get("repo") || undefined;
     const body = await request.json();
 
     if (!Array.isArray(body)) {
@@ -18,7 +19,7 @@ export async function PATCH(request: Request) {
       );
     }
 
-    const prd = readPrd();
+    const prd = readPrd(repo);
 
     for (const item of body as ReorderItem[]) {
       if (typeof item.id !== "string" || typeof item.priority !== "number") continue;
@@ -28,7 +29,7 @@ export async function PATCH(request: Request) {
       }
     }
 
-    await writePrd(prd);
+    await writePrd(prd, repo);
 
     return NextResponse.json({
       data: prd.userStories,

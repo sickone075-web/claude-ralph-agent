@@ -1,5 +1,5 @@
 import fs from "fs";
-import { getActiveProjectPaths } from "@/lib/config";
+import { getActiveProjectPaths, getActiveProjectRepos } from "@/lib/config";
 import type { PRD } from "@/lib/types";
 
 let writeLock = false;
@@ -15,7 +15,15 @@ function releaseLock(): void {
   writeLock = false;
 }
 
-function getPrdPath(): string {
+function getPrdPath(repoName?: string): string {
+  if (repoName) {
+    const repos = getActiveProjectRepos();
+    const repo = repos?.find((r) => r.name === repoName);
+    if (!repo) {
+      throw Object.assign(new Error(`Repository '${repoName}' not found`), { code: "ENOENT" });
+    }
+    return repo.prdPath;
+  }
   const paths = getActiveProjectPaths();
   if (!paths) {
     throw Object.assign(new Error("No active project configured"), { code: "ENOENT" });
@@ -23,14 +31,14 @@ function getPrdPath(): string {
   return paths.prdPath;
 }
 
-export function readPrd(): PRD {
-  const prdPath = getPrdPath();
+export function readPrd(repoName?: string): PRD {
+  const prdPath = getPrdPath(repoName);
   const raw = fs.readFileSync(prdPath, "utf-8");
   return JSON.parse(raw) as PRD;
 }
 
-export async function writePrd(prd: PRD): Promise<void> {
-  const prdPath = getPrdPath();
+export async function writePrd(prd: PRD, repoName?: string): Promise<void> {
+  const prdPath = getPrdPath(repoName);
   const tmpPath = prdPath + ".tmp";
 
   await acquireLock();

@@ -2,9 +2,10 @@ import { NextResponse } from "next/server";
 import { readPrd, writePrd, getNextStoryId } from "@/lib/prd-file";
 import type { Story, ApiResponse } from "@/lib/types";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const prd = readPrd();
+    const repo = new URL(request.url).searchParams.get("repo") || undefined;
+    const prd = readPrd(repo);
     const stories: Story[] = prd.userStories ?? [];
     return NextResponse.json({ data: stories, error: null } satisfies ApiResponse<Story[]>);
   } catch (err) {
@@ -23,6 +24,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    const repo = new URL(request.url).searchParams.get("repo") || undefined;
     const body = await request.json();
 
     if (!body.title || typeof body.title !== "string" || body.title.trim() === "") {
@@ -32,7 +34,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const prd = readPrd();
+    const prd = readPrd(repo);
     const newStory: Story = {
       id: getNextStoryId(prd.userStories),
       title: body.title.trim(),
@@ -44,7 +46,7 @@ export async function POST(request: Request) {
     };
 
     prd.userStories.push(newStory);
-    await writePrd(prd);
+    await writePrd(prd, repo);
 
     return NextResponse.json(
       { data: newStory, error: null } satisfies ApiResponse<Story>,
