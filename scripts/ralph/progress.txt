@@ -286,3 +286,32 @@ Started: 2026年03月 2日 22:51:22
   - The component self-hides when no repos are configured (returns null), maintaining backward compatibility
   - API route imports type from `@/lib/types` for PRD interface — consistent with other API routes
 ---
+
+## 2026-03-03 - US-013 (multi-repo-support)
+- What was implemented: Multi-repo story switching in Dashboard Stories page. Updated prd-file.ts to support repo-specific PRD paths via optional `repoName` parameter. Updated all PRD API routes (GET/PATCH /api/prd, CRUD /api/prd/stories, reorder) to accept `?repo=` query param for repo-specific PRD operations. Added Tabs-based repo selector to Stories page that detects multi-repo config, lists repos with prd.json, and switches between repo-specific story lists.
+- Files changed:
+  - dashboard/src/lib/prd-file.ts - Added `repoName` param to readPrd/writePrd/getPrdPath, imports getActiveProjectRepos
+  - dashboard/src/app/api/prd/route.ts - Added `?repo=` query param support to GET and PATCH
+  - dashboard/src/app/api/prd/stories/route.ts - Added `?repo=` query param support to GET and POST
+  - dashboard/src/app/api/prd/stories/[id]/route.ts - Added `?repo=` query param support to GET, PUT, DELETE
+  - dashboard/src/app/api/prd/stories/reorder/route.ts - Added `?repo=` query param support to PATCH
+  - dashboard/src/app/(dashboard)/stories/page.tsx - Added Tabs repo selector, repo-specific PRD state, repo-aware API calls
+  - scripts/ralph/prd.json - Marked US-013 passes: true
+- **Learnings for future iterations:**
+  - The `?repo=` query param pattern is cleaner than creating separate API routes — reuses all existing CRUD logic with one extra param
+  - prd-file.ts `getPrdPath(repoName?)` resolves repo path via getActiveProjectRepos() — keeps path resolution centralized
+  - Stories page uses local `repoPrd` state for multi-repo mode instead of the global store to avoid affecting other pages
+  - RepoStatus type from /api/repos/route is reused in Stories page to identify repos with prd.json (totalStories > 0)
+  - Tabs component from shadcn/ui uses `variant="line"` for a clean underline style, with type-specific icons per tab
+---
+
+## 2026-03-03 - US-014 (multi-repo-support)
+- What was implemented: Upgraded `setupFileWatcher` in `dashboard/server/ws.ts` to support multi-repo file watching. When the active project has `repositories` configured, the watcher monitors all repos' `prd.json`, `progress.txt`, and `.ralph-pid` files. Broadcast events now include a `repo` field identifying which repository triggered the change. Single-repo projects retain unchanged behavior.
+- Files changed:
+  - dashboard/server/ws.ts - Imported `getActiveProjectRepos`, refactored `setupFileWatcher` with multi-repo branch (fileEventMap for path-to-event/repo mapping), added `.ralph-pid` watching, `repo` field in broadcast payloads
+- **Learnings for future iterations:**
+  - `fileEventMap` (Record<resolvedPath, {eventType, repo?}>) is cleaner than multiple path variables for mapping files to events
+  - `path.dirname(repo.prdPath)` derives the scripts/ralph dir from prdPath — avoids needing a separate scriptsDir field on RepoInfo
+  - `.ralph-pid` file watching enables real-time running status updates for multi-repo dashboard cards (complements US-012 polling)
+  - Multi-repo watcher logs repo names for easier debugging: `[WS] Multi-repo mode: watching files for repos: docs, backend, frontend`
+---
