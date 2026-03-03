@@ -2,7 +2,7 @@
 # Override .gitignore to include .next/standalone and .next/static
 node_modules/
 src/
-server/
+/server/
 *.ts
 !*.d.ts
 .next/cache/
