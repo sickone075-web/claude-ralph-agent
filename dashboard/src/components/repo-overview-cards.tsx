@@ -14,23 +14,23 @@ const typeConfig: Record<
   string,
   { icon: typeof Database; color: string; label: string }
 > = {
-  docs: { icon: FileText, color: "text-amber-400", label: "文档" },
-  backend: { icon: Server, color: "text-cyan-400", label: "后端" },
-  frontend: { icon: Globe, color: "text-purple-400", label: "前端" },
-  app: { icon: Package, color: "text-green-400", label: "应用" },
-  other: { icon: Database, color: "text-zinc-400", label: "其他" },
+  docs: { icon: FileText, color: "text-[#F59E0B]", label: "文档" },
+  backend: { icon: Server, color: "text-[#C15F3C]", label: "后端" },
+  frontend: { icon: Globe, color: "text-[#8B5CF6]", label: "前端" },
+  app: { icon: Package, color: "text-[#22C55E]", label: "应用" },
+  other: { icon: Database, color: "text-[#B1ADA1]", label: "其他" },
 };
 
 const statusStyle: Record<
   string,
   { className: string; label: string }
 > = {
-  idle: { className: "bg-zinc-700 text-zinc-300", label: "空闲" },
+  idle: { className: "bg-[#ECEAE5] text-[#666666]", label: "空闲" },
   running: {
-    className: "bg-gradient-to-r from-cyan-500 to-blue-500 text-white",
+    className: "bg-[#FEF0E8] text-[#C15F3C]",
     label: "运行中",
   },
-  completed: { className: "bg-blue-900 text-blue-300", label: "已完成" },
+  completed: { className: "bg-[#ECFDF5] text-[#22C55E]", label: "已完成" },
 };
 
 export function RepoOverviewCards() {
@@ -63,7 +63,7 @@ export function RepoOverviewCards() {
 
   return (
     <div className="space-y-3">
-      <h3 className="text-sm font-medium text-zinc-400">仓库概览</h3>
+      <h3 className="text-sm font-medium text-[#999999]">仓库概览</h3>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {repos.map((repo) => {
           const tc = typeConfig[repo.type] ?? typeConfig.other;
@@ -79,13 +79,13 @@ export function RepoOverviewCards() {
           return (
             <Card
               key={repo.name}
-              className="bg-zinc-900 border-zinc-800 card-glow"
+              className="bg-white border-[#E0DDD5] card-glow"
             >
               <CardContent className="p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Icon className={`h-4 w-4 ${tc.color}`} />
-                    <span className="text-sm font-medium text-zinc-100">
+                    <span className="text-sm font-medium text-[#1A1A18]">
                       {repo.name}
                     </span>
                   </div>
@@ -97,14 +97,14 @@ export function RepoOverviewCards() {
                   <Badge className={ss.className}>
                     {ss.label}
                   </Badge>
-                  <span className="text-xs text-zinc-400">
+                  <span className="text-xs text-[#B1ADA1]">
                     {repo.completedStories}/{repo.totalStories}
                   </span>
                 </div>
                 {repo.totalStories > 0 && (
-                  <div className="w-full bg-zinc-800 rounded-full h-1.5">
+                  <div className="w-full bg-[#ECEAE5] rounded-full h-1.5">
                     <div
-                      className="bg-gradient-to-r from-cyan-500 to-blue-500 h-1.5 rounded-full transition-all duration-500"
+                      className="bg-[#C15F3C] h-1.5 rounded-full transition-all duration-500"
                       style={{ width: `${percent}%` }}
                     />
                   </div>

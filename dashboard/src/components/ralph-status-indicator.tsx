@@ -5,10 +5,10 @@ const statusConfig: Record<
   RalphStatus,
   { color: string; label: string; animate: boolean }
 > = {
-  idle: { color: "bg-zinc-500", label: "空闲", animate: false },
-  running: { color: "bg-cyan-500", label: "运行中", animate: true },
-  completed: { color: "bg-blue-500", label: "已完成", animate: false },
-  error: { color: "bg-red-500", label: "错误", animate: false },
+  idle: { color: "bg-[#B1ADA1]", label: "空闲", animate: false },
+  running: { color: "bg-[#C15F3C]", label: "运行中", animate: true },
+  completed: { color: "bg-[#22C55E]", label: "已完成", animate: false },
+  error: { color: "bg-[#EF4444]", label: "错误", animate: false },
 };
 
 export function RalphStatusIndicator({ compact }: { compact?: boolean }) {
@@ -34,10 +34,10 @@ export function RalphStatusIndicator({ compact }: { compact?: boolean }) {
           config.animate ? "animate-pulse" : ""
         }`}
       />
-      <span className="text-xs text-zinc-400">
+      <span className="text-xs text-[#999999]">
         {config.label}
         {ralphStatus === "running" && totalIterations > 0 && (
-          <span className="ml-1 text-zinc-500">
+          <span className="ml-1 text-[#B1ADA1]">
             ({iteration}/{totalIterations})
           </span>
         )}

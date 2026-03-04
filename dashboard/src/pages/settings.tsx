@@ -34,12 +34,10 @@ const DEFAULTS: SettingsConfig = {
 };
 
 const cardStyle = {
-  borderLeft: '3px solid transparent',
-  borderImage: 'linear-gradient(to bottom, #06B6D4, #3B82F6) 1',
-  borderImageSlice: 1,
+  borderLeft: '3px solid #C15F3C',
 };
 
-const inputClassName = "bg-zinc-950 border-zinc-700 focus:ring-cyan-500/30 focus:border-cyan-500/50";
+const inputClassName = "bg-white border-[#E0DDD5] focus:ring-[#C15F3C]/20 focus:border-[#C15F3C]/50";
 
 export default function SettingsPage() {
   const [config, setConfig] = useState<SettingsConfig>(DEFAULTS);
@@ -136,8 +134,8 @@ export default function SettingsPage() {
     return (
       <div className="p-6 max-w-2xl">
         <div className="flex items-center gap-2 mb-6">
-          <Settings className="h-5 w-5 text-zinc-400" />
-          <h2 className="text-xl font-semibold">设置</h2>
+          <Settings className="h-5 w-5 text-[#B1ADA1]" />
+          <h2 className="text-xl font-semibold text-[#1A1A18]">设置</h2>
         </div>
         <div className="space-y-6">
           <SkeletonCard className="h-48" />
@@ -153,7 +151,7 @@ export default function SettingsPage() {
     <div className="p-6 max-w-2xl">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
-          <Settings className="h-5 w-5 text-zinc-400" />
+          <Settings className="h-5 w-5 text-[#B1ADA1]" />
           <h2 className="text-xl font-semibold">设置</h2>
         </div>
         <div className="flex items-center gap-2">
@@ -161,7 +159,7 @@ export default function SettingsPage() {
             <RotateCcw className="h-4 w-4 mr-1" />
             恢复默认
           </Button>
-          <Button size="sm" onClick={handleSave} disabled={saving} className="bg-gradient-to-r from-cyan-600 to-blue-600 text-white border-0 card-glow">
+          <Button size="sm" onClick={handleSave} disabled={saving} className="bg-[#C15F3C] hover:bg-[#A84F32] text-white border-0">
             <Save className="h-4 w-4 mr-1" />
             {saving ? "保存中..." : "保存"}
           </Button>
@@ -170,8 +168,8 @@ export default function SettingsPage() {
 
       <div className="space-y-6">
         {/* Notification Configuration */}
-        <Card className="p-4 bg-zinc-900 border-zinc-800" style={cardStyle}>
-          <h3 className="text-sm font-medium text-zinc-300 mb-4">通知配置</h3>
+        <Card className="p-4 bg-white border-[#E0DDD5]" style={cardStyle}>
+          <h3 className="text-sm font-medium text-[#1A1A18] mb-4">通知配置</h3>
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="webhookUrl">飞书 Webhook URL</Label>
@@ -188,7 +186,7 @@ export default function SettingsPage() {
                   <button
                     type="button"
                     onClick={() => setShowWebhookUrl(!showWebhookUrl)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-[#999999] hover:text-[#666666] transition-colors"
                   >
                     {showWebhookUrl ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
@@ -204,16 +202,16 @@ export default function SettingsPage() {
                   {testingWebhook ? "发送中..." : "发送测试消息"}
                 </Button>
               </div>
-              <p className="text-xs text-zinc-500">飞书群机器人 Webhook 地址，用于接收 Ralph 运行通知</p>
+              <p className="text-xs text-[#999999]">飞书群机器人 Webhook 地址，用于接收 Ralph 运行通知</p>
             </div>
           </div>
         </Card>
 
-        <Separator className="bg-zinc-800" />
+        <Separator className="bg-[#E0DDD5]" />
 
         {/* Fault Tolerance Configuration */}
-        <Card className="p-4 bg-zinc-900 border-zinc-800" style={cardStyle}>
-          <h3 className="text-sm font-medium text-zinc-300 mb-4">容错配置</h3>
+        <Card className="p-4 bg-white border-[#E0DDD5]" style={cardStyle}>
+          <h3 className="text-sm font-medium text-[#1A1A18] mb-4">容错配置</h3>
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="timeoutMinutes">超时时间（分钟）</Label>
@@ -226,7 +224,7 @@ export default function SettingsPage() {
                 onChange={(e) => setConfig({ ...config, timeoutMinutes: parseInt(e.target.value) || 30 })}
                 className={`${inputClassName} w-32`}
               />
-              <p className="text-xs text-zinc-500">单次 Ralph 运行的最大超时时间（5-120 分钟，默认：30）</p>
+              <p className="text-xs text-[#999999]">单次 Ralph 运行的最大超时时间（5-120 分钟，默认：30）</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="maxConsecutiveFailures">连续失败上限</Label>
@@ -239,7 +237,7 @@ export default function SettingsPage() {
                 onChange={(e) => setConfig({ ...config, maxConsecutiveFailures: parseInt(e.target.value) || 5 })}
                 className={`${inputClassName} w-32`}
               />
-              <p className="text-xs text-zinc-500">连续失败多少次后暂停运行（1-20，默认：5）</p>
+              <p className="text-xs text-[#999999]">连续失败多少次后暂停运行（1-20，默认：5）</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="retryIntervalSeconds">重试间隔（秒）</Label>
@@ -252,16 +250,16 @@ export default function SettingsPage() {
                 onChange={(e) => setConfig({ ...config, retryIntervalSeconds: parseInt(e.target.value) || 3600 })}
                 className={`${inputClassName} w-32`}
               />
-              <p className="text-xs text-zinc-500">失败后重试的等待时间（60-7200 秒，默认：3600）</p>
+              <p className="text-xs text-[#999999]">失败后重试的等待时间（60-7200 秒，默认：3600）</p>
             </div>
           </div>
         </Card>
 
-        <Separator className="bg-zinc-800" />
+        <Separator className="bg-[#E0DDD5]" />
 
         {/* Environment Configuration */}
-        <Card className="p-4 bg-zinc-900 border-zinc-800" style={cardStyle}>
-          <h3 className="text-sm font-medium text-zinc-300 mb-4">环境配置</h3>
+        <Card className="p-4 bg-white border-[#E0DDD5]" style={cardStyle}>
+          <h3 className="text-sm font-medium text-[#1A1A18] mb-4">环境配置</h3>
           <div className="space-y-4">
             {isWindows && (
               <div className="space-y-2">
@@ -273,7 +271,7 @@ export default function SettingsPage() {
                   placeholder="C:\Program Files\Git\bin\bash.exe"
                   className={inputClassName}
                 />
-                <p className="text-xs text-zinc-500">Windows 上 Git Bash 的完整路径</p>
+                <p className="text-xs text-[#999999]">Windows 上 Git Bash 的完整路径</p>
               </div>
             )}
             <div className="space-y-2">
@@ -282,7 +280,7 @@ export default function SettingsPage() {
                 value={config.defaultTool}
                 onValueChange={(value: "claude" | "amp") => setConfig({ ...config, defaultTool: value })}
               >
-                <SelectTrigger id="defaultTool" className="bg-zinc-950 border-zinc-700 w-48">
+                <SelectTrigger id="defaultTool" className="bg-white border-[#E0DDD5] w-48">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -290,7 +288,7 @@ export default function SettingsPage() {
                   <SelectItem value="amp">Amp</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-zinc-500">启动 Ralph 时使用的 AI 工具</p>
+              <p className="text-xs text-[#999999]">启动 Ralph 时使用的 AI 工具</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="defaultMaxIterations">最大迭代次数</Label>
@@ -303,21 +301,21 @@ export default function SettingsPage() {
                 onChange={(e) => setConfig({ ...config, defaultMaxIterations: parseInt(e.target.value) || 10 })}
                 className={`${inputClassName} w-32`}
               />
-              <p className="text-xs text-zinc-500">每次 Ralph 运行的最大迭代次数（默认：10）</p>
+              <p className="text-xs text-[#999999]">每次 Ralph 运行的最大迭代次数（默认：10）</p>
             </div>
           </div>
         </Card>
 
-        <Separator className="bg-zinc-800" />
+        <Separator className="bg-[#E0DDD5]" />
 
         {/* Interface */}
-        <Card className="p-4 bg-zinc-900 border-zinc-800" style={cardStyle}>
-          <h3 className="text-sm font-medium text-zinc-300 mb-4">界面</h3>
+        <Card className="p-4 bg-white border-[#E0DDD5]" style={cardStyle}>
+          <h3 className="text-sm font-medium text-[#1A1A18] mb-4">界面</h3>
           <div className="space-y-4">
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <Label htmlFor="terminalFontSize">终端字体大小</Label>
-                <span className="text-sm text-zinc-400 font-mono">{config.terminalFontSize}px</span>
+                <span className="text-sm text-[#B1ADA1] font-mono">{config.terminalFontSize}px</span>
               </div>
               <Slider
                 id="terminalFontSize"
@@ -328,7 +326,7 @@ export default function SettingsPage() {
                 onValueChange={([value]) => setConfig({ ...config, terminalFontSize: value })}
                 className="w-full"
               />
-              <div className="flex justify-between text-xs text-zinc-500">
+              <div className="flex justify-between text-xs text-[#999999]">
                 <span>12px</span>
                 <span>24px</span>
               </div>
