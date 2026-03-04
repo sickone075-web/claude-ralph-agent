@@ -406,7 +406,6 @@ function stepPluginGuide(): void {
   console.log(chalk.bold('\n  🔌 Claude Code Skills 注册\n'));
 
   const pkgRoot = getPackageRoot();
-  const pluginDir = resolve(pkgRoot, '.claude-plugin');
   const skillsDir = resolve(pkgRoot, 'skills');
 
   if (!existsSync(skillsDir)) {
@@ -418,35 +417,45 @@ function stepPluginGuide(): void {
   console.log(OK('  ✓ Skills 目录已就绪'));
   console.log(DIM(`    路径: ${skillsDir}\n`));
 
-  // Try auto-register via claude CLI
-  let installed = false;
-  const pluginName = 'claude-ralph-agent';
+  const MARKETPLACE_REPO = 'sickone075-web/claude-ralph-agent';
+  const MARKETPLACE_NAME = 'claude-ralph-agent';
+  const PLUGIN_KEY = `claude-ralph-agent@${MARKETPLACE_NAME}`;
+
+  // Build env with CLAUDE_CODE_GIT_BASH_PATH for Windows
+  const env = { ...process.env };
+  const config = readConfig();
+  if (config.gitBashPath) {
+    env.CLAUDE_CODE_GIT_BASH_PATH = config.gitBashPath;
+  }
 
   // Check if already registered
+  let installed = false;
   try {
     const settingsPath = resolve(homedir(), '.claude', 'settings.json');
     if (existsSync(settingsPath)) {
       const settings = JSON.parse(readFileSync(settingsPath, 'utf-8'));
       const enabled = settings.enabledPlugins ?? {};
-      if (Object.keys(enabled).some(k => k.includes(pluginName))) {
+      if (enabled[PLUGIN_KEY] === true) {
         console.log(OK('  ✓ Skills 已注册到 Claude Code'));
         installed = true;
       }
     }
   } catch {
-    // settings.json parse failure, continue with install
+    // continue with install
   }
 
   if (!installed) {
-    // Set CLAUDE_CODE_GIT_BASH_PATH for Windows if gitBashPath is configured
-    const env = { ...process.env };
-    const config = readConfig();
-    if (config.gitBashPath) {
-      env.CLAUDE_CODE_GIT_BASH_PATH = config.gitBashPath;
+    // Step 1: Add marketplace
+    try {
+      execSync(`claude plugin marketplace add ${MARKETPLACE_REPO}`, { stdio: 'pipe', env });
+      console.log(OK(`  ✓ Marketplace ${MARKETPLACE_NAME} 已添加`));
+    } catch {
+      // Marketplace may already exist, continue
     }
 
+    // Step 2: Install plugin
     try {
-      execSync(`claude plugin install ${pluginName}`, { stdio: 'pipe', env });
+      execSync(`claude plugin install ${PLUGIN_KEY}`, { stdio: 'pipe', env });
       console.log(OK('  ✓ Skills 已自动注册到 Claude Code'));
       installed = true;
     } catch {
@@ -455,8 +464,9 @@ function stepPluginGuide(): void {
   }
 
   if (!installed) {
-    console.log(WARN('  ⚠ 未能自动注册 Skills，请手动安装：'));
-    console.log(DIM(`    claude plugin install ${pluginName}`));
+    console.log(WARN('  ⚠ 未能自动注册 Skills，请在 Claude Code 中手动执行：'));
+    console.log(DIM(`    /plugin marketplace add ${MARKETPLACE_REPO}`));
+    console.log(DIM(`    /plugin install ${PLUGIN_KEY}`));
     console.log('');
   }
 

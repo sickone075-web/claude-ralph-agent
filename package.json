@@ -18,7 +18,7 @@
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "postinstall": "node -e \"try{require('child_process').execSync('claude plugin install claude-ralph-agent',{stdio:'ignore'})}catch{}\"",
+    "postinstall": "node -e \"console.log('\\n  Run [ralph init] to register Claude Code skills.\\n')\"",
     "prepublishOnly": "tsc && cd dashboard && npm install && npm run build && cd .. && npx esbuild dashboard/server/index.ts --bundle --platform=node --format=cjs --outfile=dist/dashboard-server.cjs --external:express --external:ws --external:chokidar --external:simple-git"
   },
   "files": [
