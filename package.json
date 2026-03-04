@@ -1,6 +1,6 @@
 {
   "name": "claude-ralph-agent",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Ralph 管理工具 — 安装引导、启动控制台、管理项目",
   "type": "module",
   "author": "sickone075",
@@ -18,7 +18,7 @@
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "postinstall": "claude plugin install claude-ralph-agent 2>/dev/null || true",
+    "postinstall": "node -e \"try{require('child_process').execSync('claude plugin install claude-ralph-agent',{stdio:'ignore'})}catch{}\"",
     "prepublishOnly": "tsc && cd dashboard && npm install && npm run build && cd .. && npx esbuild dashboard/server/index.ts --bundle --platform=node --format=cjs --outfile=dist/dashboard-server.cjs --external:express --external:ws --external:chokidar --external:simple-git"
   },
   "files": [
