@@ -1,6 +1,6 @@
 {
   "name": "claude-ralph-agent",
-  "version": "0.1.5",
+  "version": "0.2.0",
   "description": "Ralph 管理工具 — 安装引导、启动控制台、管理项目",
   "type": "module",
   "author": "sickone075",
