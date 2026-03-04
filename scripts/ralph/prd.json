@@ -1,104 +1,238 @@
 {
   "project": "claude-ralph",
-  "branchName": "ralph/unified-start-flow",
-  "description": "启动流程统一化 — 将启停入口统一为 Claude Code Skill（/ralph-start 和 /ralph-stop），Web Dashboard 改为纯状态监控 + 全局配置管理，通过 PID 文件管理进程生命周期",
+  "branchName": "ralph/dashboard-restructure",
+  "description": "仪表盘重构 — 以 Flow 流程可视化为核心，去除终端页面，点击节点展示详情+日志+Git+时间线，侧边栏精简为 Dashboard + Settings",
   "userStories": [
     {
       "id": "US-001",
-      "title": "ralph.sh PID 文件管理",
-      "description": "作为开发者，我需要 ralph.sh 在启动和退出时管理 PID 文件，以便外部程序（Skill、Dashboard）能检测其运行状态。",
+      "title": "删除终端页面、Stories/Logs/Archives 页面及 xterm 依赖",
+      "description": "作为开发者，我需要移除独立的 Terminal、Stories、Logs、Archives 页面和 xterm.js 相关代码，以减少代码量并为重构做准备。",
       "acceptanceCriteria": [
-        "ralph.sh 启动时将自身 PID 写入 scripts/ralph/.ralph-pid",
-        "使用 trap cleanup EXIT 确保正常退出（exit 0/1/2）和信号终止时删除 .ralph-pid 文件",
-        "ralph.sh 启动时若 .ralph-pid 已存在，检查对应进程是否仍在运行（kill -0）；若已死亡则覆盖，若仍在运行则报错退出",
-        ".ralph-pid 加入 .gitignore"
+        "删除 dashboard/src/pages/terminal.tsx 文件",
+        "删除 dashboard/src/components/terminal-view.tsx 文件",
+        "删除 dashboard/src/pages/stories.tsx 文件",
+        "删除 dashboard/src/pages/logs.tsx 文件",
+        "删除 dashboard/src/pages/archives.tsx 文件",
+        "从 dashboard/package.json 中移除 @xterm/xterm、@xterm/addon-fit、@xterm/addon-web-links 依赖",
+        "运行 npm install 更新 lock 文件",
+        "更新 dashboard/src/router.tsx 移除这些页面的路由配置",
+        "确认没有其他文件引用已删除的模块（无编译错误）",
+        "类型检查通过"
       ],
       "priority": 1,
       "passes": true,
-      "notes": "此故事为 shell 脚本修改，无 TypeScript 类型检查。使用 kill -0 $pid 检测进程存活。"
+      "notes": "这是纯删除操作。保留 kanban-board.tsx、kanban-card.tsx 等组件（可能在详情面板复用）。保留 story-sheet.tsx 和 story-edit-dialog.tsx（在详情面板复用）。dashboard 已从 Next.js 迁移到 Vite SPA，页面在 dashboard/src/pages/ 目录。"
     },
     {
       "id": "US-002",
-      "title": "创建 /ralph-start Skill",
-      "description": "作为用户，我希望在 Claude Code 中输入 /ralph-start 即可启动 Ralph 循环，以便不需要记住脚本路径和参数。",
+      "title": "简化侧边栏导航为 Dashboard + Settings（Claude 浅色主题）",
+      "description": "作为用户，我希望侧边栏只保留 Dashboard 和 Settings 两个入口，采用 Claude 风格的浅色 icon rail 设计。",
       "acceptanceCriteria": [
-        "创建 skills/start/SKILL.md，skill name 为 ralph-start，user-invocable: true",
-        "Skill 指导 Claude Code 读取 ~/.ralph/config.json 获取全局默认参数（defaultTool、defaultMaxIterations、timeoutMinutes、webhookUrl）",
-        "支持可选参数覆盖（如 /ralph-start --tool amp --iterations 5）",
-        "读取当前项目 scripts/ralph/prd.json 统计待完成 story 数量",
-        "检查 .ralph-pid 文件判断是否已有实例运行，已运行则提示当前状态并退出",
-        "如果无待完成 story（全部 passes: true），提示所有任务已完成并退出",
-        "启动前打印摘要：工具、迭代次数、超时时间、待完成 story 数/总数",
-        "后台执行 bash scripts/ralph/ralph.sh --tool X --timeout Y --webhook Z N",
-        "返回 Ralph 已启动 结果"
-      ],
-      "priority": 2,
-      "passes": true,
-      "notes": "Skill 是 markdown 指令文件，指导 Claude Code 使用 Bash 工具和 Read 工具完成流程。后台执行使用 Bash 工具的 run_in_background。"
-    },
-    {
-      "id": "US-003",
-      "title": "创建 /ralph-stop Skill",
-      "description": "作为用户，我希望在 Claude Code 中输入 /ralph-stop 即可停止正在运行的 Ralph，以便快速中断循环。",
-      "acceptanceCriteria": [
-        "创建 skills/stop/SKILL.md，skill name 为 ralph-stop，user-invocable: true",
-        "Skill 指导 Claude Code 读取 scripts/ralph/.ralph-pid 文件",
-        "如果文件不存在或进程已死亡，提示 Ralph 当前未运行",
-        "如果进程存在，执行 kill 终止进程树（Windows 使用 taskkill /pid X /t /f）",
-        "确认进程已终止并清理 .ralph-pid 文件",
-        "返回 Ralph 已停止 结果"
-      ],
-      "priority": 3,
-      "passes": true,
-      "notes": "Skill 是 markdown 指令文件。需兼容 Windows（taskkill）和 Unix（kill）。"
-    },
-    {
-      "id": "US-004",
-      "title": "Terminal 页面改为纯监控模式",
-      "description": "作为用户，我希望 Dashboard Terminal 页面只展示运行状态和日志输出，不提供启停操作，以便职责清晰。",
-      "acceptanceCriteria": [
-        "移除 tool 选择下拉框和 maxIterations 选择下拉框",
-        "移除启动按钮（handleStart）和停止按钮（handleStop）及其逻辑",
-        "移除相关 state：tool、maxIterations、isStarting、isStopping",
-        "移除不再需要的 import（Play、Square 等启停相关图标和 Select 组件）",
-        "更新欢迎消息：将 选择 AI 工具和最大迭代次数然后点击启动 改为 在 Claude Code 中使用 /ralph-start 启动循环",
-        "保留：状态 badge、迭代进度、运行时间、WebSocket 连接状态、实时终端输出、迭代历史 Tab、工具栏、完成摘要",
+        "sidebar.tsx 中仅保留 Dashboard 和 Settings 两个导航项",
+        "移除 Terminal、Stories、Logs、Archives 的导航链接和图标",
+        "侧边栏宽度 64px，icon rail 样式，背景色 #EDEDEA，右边框 1px #E0DDD5",
+        "顶部 Logo：40x40 圆角方块，背景 #C15F3C（terracotta），白色 'R' 字，字体 serif",
+        "活跃导航项：背景 #C15F3C，白色图标；非活跃：透明背景，#999999 图标",
+        "底部保留 Settings 图标和 Ralph 状态指示点（10x10 绿色圆点）",
+        "访问已删除页面的旧路径时重定向到 Dashboard（在 router.tsx 中配置）",
         "类型检查通过",
         "使用 dev-browser skill 在浏览器中验证"
       ],
+      "priority": 2,
+      "passes": true,
+      "notes": "参照 design-system/MASTER.md 的 Sidebar (Icon Rail) 章节。文件：dashboard/src/components/sidebar.tsx 和 dashboard/src/router.tsx。设计稿见 pencil-ralph.pen 的 'Dashboard - Main View' 屏。"
+    },
+    {
+      "id": "US-003",
+      "title": "后端日志按 Story ID 标记并缓存",
+      "description": "作为系统，我需要在 WebSocket 推送日志时附带当前 Story ID，并按 Story 分段缓存日志，以便前端按 Story 过滤展示。",
+      "acceptanceCriteria": [
+        "WebSocket ralph:output 事件的 payload 中新增 storyId 字段（string | null）",
+        "后端通过解析 progress.txt 的最新条目，确定当前正在处理的 Story ID",
+        "当无法确定 Story 归属时 storyId 为 null",
+        "后端使用内存 Map<string, string[]> 按 Story ID 缓存日志行",
+        "新增 API 端点 GET /api/logs/:storyId 返回指定 Story 的日志数组",
+        "新增 API 端点 GET /api/logs 返回全部日志（不按 Story 过滤）",
+        "在 dashboard/server/routes/ 下新建 logs 路由文件",
+        "类型检查通过"
+      ],
+      "priority": 3,
+      "passes": true,
+      "notes": "progress.txt 中的条目格式为 '## YYYY-MM-DD - US-XXX'，可据此解析当前执行的 Story ID。日志缓存在服务端内存中即可，进程重启后清空。WebSocket 事件在 dashboard/server/index.ts 中处理。"
+    },
+    {
+      "id": "US-004",
+      "title": "后端新增 Story 关联的 Git 提交查询 API",
+      "description": "作为系统，我需要提供一个 API 端点来查询与特定 Story 关联的 Git 提交记录，以便前端在详情面板中展示。",
+      "acceptanceCriteria": [
+        "新增 API 端点 GET /api/git/commits?storyId=US-001 返回关联提交列表",
+        "关联逻辑：匹配提交消息中包含 Story ID（如 'US-001'）的提交",
+        "每条提交返回字段：hash（短哈希）、message（提交消息）、author（作者）、date（时间）",
+        "无关联提交时返回空数组",
+        "使用 simple-git 库（项目已有该依赖）执行 git log 查询",
+        "在 dashboard/server/routes/ 下新建或扩展 git 路由文件",
+        "类型检查通过"
+      ],
       "priority": 4,
       "passes": true,
-      "notes": "文件：dashboard/src/app/(dashboard)/terminal/page.tsx。只做减法，不添加新功能。"
+      "notes": "simple-git 已在项目依赖中。使用 git log --grep='US-001' --format 过滤提交。路由文件参考现有 dashboard/server/routes/ 下的模式。"
     },
     {
       "id": "US-005",
-      "title": "Dashboard 通过 PID 文件检测运行状态",
-      "description": "作为用户，我希望无论 Ralph 是通过 Skill 还是其他方式启动的，Dashboard 都能检测到运行状态，以便实时监控。",
+      "title": "创建增强版 Story 详情抽屉组件（基础结构 + 详情 Tab）",
+      "description": "作为用户，我希望点击 Story 节点后右侧滑出白色详情抽屉，首个 Tab 展示故事描述和验收标准，并支持编辑。",
       "acceptanceCriteria": [
-        "ralph-process.ts 新增 detectRunningFromPid() 函数，读取 .ralph-pid 文件并用 process.kill(pid, 0) 检查进程是否存活",
-        "getRalphStatus() 在内存态无进程时回退调用 detectRunningFromPid() 判断外部启动的 ralph",
-        "ws.ts 的文件监听列表增加 .ralph-pid 文件，PID 文件出现/消失时广播 ralph:status 事件",
-        "当 PID 对应的进程退出后，状态回退为 idle",
-        "类型检查通过"
+        "重构 dashboard/src/components/flow/story-detail-panel.tsx 为增强版抽屉",
+        "使用 Sheet 组件实现右侧滑出效果，宽度 560px（约 40% 页面宽度）",
+        "抽屉白色背景 #FFFFFF，左边框 1px #E0DDD5，左侧阴影 -8px 0 24px rgba(0,0,0,0.04)",
+        "抽屉顶部：Story ID（JetBrains Mono 13px 700，terracotta #C15F3C）、状态 Badge（accent-light 背景 #FEF0E8 pill 样式）、关闭按钮、标题（Cormorant Garamond 20px 600 #1A1A18）",
+        "包含 4 个 Tab 切换：详情、日志、Git、时间线（后三个 Tab 内容暂显示占位文字）",
+        "活跃 Tab：文字和图标 #C15F3C，底部 2px accent 边框；非活跃 Tab：#B1ADA1",
+        "详情 Tab 展示：描述（Inter 13px，label 用 Inter 11px 600 #999999 letter-spacing 1px）、验收标准列表（复选框样式，已完成绿色 #ECFDF5 背景带 check 图标，未完成仅 #E0DDD5 边框）、优先级 Badge（#FEF0E8 pill）、备注",
+        "详情 Tab 支持编辑模式：点击编辑按钮（#F5F5F0 背景 8px 圆角）进入编辑状态",
+        "编辑后保存调用 PATCH /api/prd API 更新 prd.json",
+        "点击抽屉外部或关闭按钮收起面板",
+        "在 story-flow.tsx 中的节点点击事件触发抽屉打开",
+        "类型检查通过",
+        "使用 dev-browser skill 在浏览器中验证"
       ],
       "priority": 5,
       "passes": true,
-      "notes": "文件：dashboard/src/lib/ralph-process.ts 和 dashboard/server/ws.ts。Windows 上 process.kill(pid, 0) 也可用于检测进程存活。"
+      "notes": "参照 design-system/MASTER.md 的 Detail Drawer 章节和 pencil-ralph.pen 的 'Dashboard - Detail Drawer Open' 屏。复用现有 ui/sheet.tsx 和 ui/tabs.tsx 组件。参考现有 story-sheet.tsx 和 story-edit-dialog.tsx 的编辑逻辑。story-flow.tsx 中已有 onNodeClick 事件处理。"
     },
     {
       "id": "US-006",
-      "title": "Start API 支持无参数调用并传递全部参数",
-      "description": "作为 Skill 调用者，我希望 POST /api/ralph/start 支持空 body 调用，自动使用全局配置默认值，并将全部运行参数传递给 ralph.sh。",
+      "title": "详情抽屉 — 执行日志 Tab（WebSocket 实时流）",
+      "description": "作为用户，我希望在详情抽屉的日志 Tab 中查看该 Story 的执行日志，运行中时实时滚动。",
       "acceptanceCriteria": [
-        "POST /api/ralph/start 的 body 可为空 {} 或不提供",
-        "未提供的参数从 ~/.ralph/config.json 读取默认值（defaultTool → tool，defaultMaxIterations → maxIterations）",
-        "提供的参数覆盖全局配置值",
-        "startRalph 函数传递全部运行参数给 ralph.sh（包括 --timeout 和 --webhook）",
-        "类型检查通过"
+        "日志 Tab 从 GET /api/logs/:storyId 加载历史日志",
+        "日志顶部工具栏：左侧标题 '执行日志 — US-XXX'（JetBrains Mono 11px #999999），右侧暂停滚动按钮（#E0DDD5 边框 6px 圆角）",
+        "日志区域背景 #FAFAF7（warm off-white），JetBrains Mono 11px，lineHeight 1.6",
+        "日志颜色编码：命令 #B1ADA1、信息 #666666、Story 拾取 #C15F3C（terracotta）、代码新增 #22C55E、警告 #F59E0B",
+        "实时日志末尾显示 accent 色圆点 + 光标块作为 live 指示器",
+        "Story 状态为 running 时，通过 WebSocket 订阅 ralph:output 事件，过滤 storyId 匹配的日志实时追加",
+        "实时日志自动滚动到底部，暂停按钮可切换",
+        "日志为空时展示空状态提示文字",
+        "类型检查通过",
+        "使用 dev-browser skill 在浏览器中验证"
       ],
       "priority": 6,
       "passes": true,
-      "notes": "文件：dashboard/src/app/api/ralph/start/route.ts 和 dashboard/src/lib/ralph-process.ts。"
+      "notes": "参照 design-system/MASTER.md 的 Log Output Area 章节和 pencil-ralph.pen 的 'Dashboard - Logs Tab' 屏。注意：不使用深色终端背景，改用浅色 warm off-white (#FAFAF7) 背景配合彩色文字。使用 use-websocket.ts hook 订阅事件。不使用 xterm.js，改用 pre/code 元素渲染。"
+    },
+    {
+      "id": "US-007",
+      "title": "详情抽屉 — Git 提交记录 Tab",
+      "description": "作为用户，我希望在详情抽屉的 Git Tab 中查看与该 Story 相关的代码提交。",
+      "acceptanceCriteria": [
+        "Git Tab 从 GET /api/git/commits?storyId=xxx 加载提交列表",
+        "每条提交展示：短哈希（JetBrains Mono #C15F3C）、提交消息（Inter 13px #1A1A18）、作者（#666666）、相对时间（#999999）",
+        "提交列表按时间倒序排列（最新在上），列表项之间用 #E0DDD5 分隔线",
+        "无关联提交时展示空状态提示（#B1ADA1 文字居中）",
+        "加载中状态展示 loading 指示器",
+        "类型检查通过",
+        "使用 dev-browser skill 在浏览器中验证"
+      ],
+      "priority": 7,
+      "passes": true,
+      "notes": "参照 design-system/MASTER.md 的配色和字体规范。参考 US-004 实现的后端 API。使用 fetch 请求数据，不需要 WebSocket。"
+    },
+    {
+      "id": "US-008",
+      "title": "详情抽屉 — 耗时与状态时间线 Tab",
+      "description": "作为用户，我希望在详情抽屉的时间线 Tab 中查看该 Story 的执行时间线和各阶段耗时。",
+      "acceptanceCriteria": [
+        "时间线 Tab 使用垂直时间线样式展示状态变化事件",
+        "时间线节点圆点颜色对应状态：pending #B1ADA1、running #C15F3C、completed #22C55E、failed #EF4444",
+        "时间线连接线颜色 #E0DDD5，事件标签用 Inter 13px #1A1A18，时间戳用 JetBrains Mono 11px #999999",
+        "相邻事件之间展示耗时（如 '耗时 3 分 25 秒'，Inter 12px #666666）",
+        "展示总耗时（从开始到完成）",
+        "运行中的 Story 展示实时累计耗时（每秒更新的动态计时器，#C15F3C terracotta 色）",
+        "数据来源：Story 对象的 startedAt 和 completedAt 字段",
+        "类型检查通过",
+        "使用 dev-browser skill 在浏览器中验证"
+      ],
+      "priority": 8,
+      "passes": true,
+      "notes": "参照 design-system/MASTER.md 的配色和字体规范。时间线用纯 CSS + div 实现，无需额外组件库。使用 setInterval 实现运行中的实时计时器。Story 类型定义在 dashboard/src/lib/types.ts 中已有 startedAt 和 completedAt 字段。"
+    },
+    {
+      "id": "US-009",
+      "title": "Dashboard 集成存档切换器替代独立 Archives 页面",
+      "description": "作为用户，我希望在 Dashboard 顶部 Header 中可以切换查看历史存档数据，无需离开当前页面。",
+      "acceptanceCriteria": [
+        "Dashboard Header 右侧保留 Archive Switcher 按钮（#E0DDD5 边框 8px 圆角，archive 图标 + 文字 + chevron-down）",
+        "默认展示当前运行的流程图数据",
+        "切换到历史存档时，流程图加载该存档的 Story 数据并展示对应状态",
+        "存档列表展示：运行日期、完成率、Story 数量等概要",
+        "切换存档时流程图数据平滑更新",
+        "已有 flow/archive-switcher.tsx 组件可直接复用或微调",
+        "类型检查通过",
+        "使用 dev-browser skill 在浏览器中验证"
+      ],
+      "priority": 9,
+      "passes": true,
+      "notes": "参照 design-system/MASTER.md 的 Header Bar 章节和 pencil-ralph.pen 的 'Dashboard - Main View' 屏中 Header 右侧的 Archives 按钮设计。archive-switcher.tsx 已存在并在 dashboard.tsx 中使用。"
+    },
+    {
+      "id": "US-010",
+      "title": "UI 风格刷新 — Claude 浅色主题全局配色系统",
+      "description": "作为用户，我希望仪表盘采用仿照 Claude.ai 的浅色暖调视觉风格，温暖、精致、易于阅读。",
+      "acceptanceCriteria": [
+        "更新 dashboard/src/globals.css 中的 CSS 变量，严格按照 design-system/MASTER.md 的 Color System 定义",
+        "页面背景改为 warm cream #F5F5F0（替代当前深色背景）",
+        "卡片/白色表面背景 #FFFFFF",
+        "主 accent 色改为 terracotta #C15F3C（替代当前 cyan/zinc）",
+        "文字颜色：主文字 #1A1A18（warm near-black）、次要 #666666、三级 #999999、占位 #B1ADA1",
+        "边框色 #E0DDD5（warm gray），hover 态 #ECEAE5",
+        "引入 Cormorant Garamond 字体用于标题（通过 Google Fonts import 或本地加载）",
+        "保持 Inter 用于 UI 文字，JetBrains Mono 用于代码/数据",
+        "更新侧边栏背景为 #EDEDEA，Header 背景为 #FFFFFF",
+        "状态色保持不变：success #22C55E、warning #F59E0B、error #EF4444，增加 light 变体（#ECFDF5、#FFFBEB、#FEF2F2）",
+        "确保所有现有 shadcn/ui 组件在浅色主题下正常显示",
+        "类型检查通过",
+        "使用 dev-browser skill 在浏览器中验证"
+      ],
+      "priority": 10,
+      "passes": true,
+      "notes": "严格参照 design-system/MASTER.md 全部 Color System 和 Typography 章节。Tailwind v4 使用 CSS 变量定义主题色，修改 globals.css 的 :root 变量即可全局生效。Google Fonts import: Cormorant Garamond + JetBrains Mono + Inter。设计稿见 pencil-ralph.pen 三个屏。"
+    },
+    {
+      "id": "US-011",
+      "title": "UI 风格刷新 — 流程图节点样式重设计（Claude 浅色主题）",
+      "description": "作为用户，我希望流程图中的 Start、Story、End 节点采用 Claude 浅色主题的全新视觉设计。",
+      "acceptanceCriteria": [
+        "Start 节点（start-node.tsx）：白色卡片 #FFFFFF，12px 圆角，subtle shadow（0 2px 12px rgba(0,0,0,0.03)），左侧 48x48 terracotta #C15F3C 图标方块（12px 圆角，白色 play 图标），项目名 Cormorant Garamond 16px 600，进度条（#ECEAE5 背景 + #C15F3C 填充）",
+        "Story 节点（story-node.tsx）Completed 状态：白色卡片，绿色边框 #22C55E33 1.5px，左侧 32px 圆形图标（#ECFDF5 背景 + #22C55E check 图标），Story ID 绿色 JetBrains Mono 10px 600",
+        "Story 节点 Running 状态：白色卡片，terracotta 边框 #C15F3C 1.5px，warm glow shadow（0 0 16px 2px rgba(193,95,60,0.15)），左侧 32px 圆形图标（#FEF0E8 背景 + #C15F3C loader 图标），Story ID terracotta，显示已用时间",
+        "Story 节点 Pending 状态：白色卡片，#E0DDD5 边框 1px，minimal shadow，左侧 32px 圆形（#F5F5F0 背景 + #B1ADA1 dot），Story ID 和标题都用 muted 色",
+        "Story 节点 Failed 状态：白色卡片，红色边框 #EF444433，左侧 32px 圆形（#FEF2F2 背景 + #EF4444 x 图标），Story ID 红色",
+        "End 节点（end-node.tsx）：白色卡片 120x64，12px 圆角，flag 图标 + 'End' 文字 #B1ADA1 居中",
+        "连接线颜色 #E0DDD5，1.5px 粗细",
+        "running 状态节点有脉冲光晕动画（terracotta shadow pulse 2s infinite）",
+        "类型检查通过",
+        "使用 dev-browser skill 在浏览器中验证"
+      ],
+      "priority": 11,
+      "passes": true,
+      "notes": "严格参照 design-system/MASTER.md 的 Story Node States 和 Shadows 章节，以及 pencil-ralph.pen 的 'Dashboard - Main View' 屏中所有节点的精确设计。三个节点组件在 dashboard/src/components/flow/ 目录。使用 Tailwind CSS 类实现。React Flow 自定义节点通过 NodeProps 接收数据。"
+    },
+    {
+      "id": "US-012",
+      "title": "清理废弃代码、状态和未使用依赖",
+      "description": "作为开发者，我需要清理所有因重构产生的废弃代码，保持代码库整洁。",
+      "acceptanceCriteria": [
+        "清理 store.ts 中终端相关的状态字段（如有）",
+        "移除 WebSocket hook 中终端专用的事件处理逻辑（如不再需要的 ralph:stdin 事件）",
+        "删除所有未被引用的组件文件（如 kanban-board.tsx、kanban-card.tsx，如果确认不再使用）",
+        "确认 dashboard/package.json 中无未使用的依赖（如 @hello-pangea/dnd，如果 kanban 已移除）",
+        "全量构建通过（npm run build）",
+        "无 TypeScript 编译错误",
+        "类型检查通过"
+      ],
+      "priority": 12,
+      "passes": true,
+      "notes": "此故事在最后执行，确保所有其他故事完成后再做清理。谨慎删除：如果某个组件仍被引用，不要删除。使用 grep 确认引用关系后再删除。"
     }
   ]
 }

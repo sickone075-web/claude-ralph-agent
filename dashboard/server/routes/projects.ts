@@ -77,6 +77,46 @@ projectsRouter.put("/active", (req: Request, res: Response) => {
   }
 });
 
+// PUT /api/projects/:name — update project config (e.g. repositories)
+projectsRouter.put("/:name", (req: Request, res: Response) => {
+  try {
+    const name = decodeURIComponent(req.params.name as string);
+    const config = getConfig();
+
+    const project = config.projects.find((p) => p.name === name);
+    if (!project) {
+      res.status(404).json({ data: null, error: `Project "${name}" not found` });
+      return;
+    }
+
+    const { path: newPath, repositories } = req.body as {
+      path?: string;
+      repositories?: Record<string, { path: string; type: string; priority: number; checks?: string[] }>;
+    };
+
+    if (newPath !== undefined) {
+      if (!fs.existsSync(newPath)) {
+        res.status(400).json({ data: null, error: `Path does not exist: ${newPath}` });
+        return;
+      }
+      project.path = newPath;
+    }
+
+    if (repositories !== undefined) {
+      project.repositories = repositories as ProjectConfig["repositories"];
+    }
+
+    writeConfig(config);
+
+    res.json({
+      data: { projects: config.projects, activeProject: config.activeProject },
+      error: null,
+    });
+  } catch {
+    res.status(500).json({ data: null, error: "Failed to update project" });
+  }
+});
+
 // DELETE /api/projects/:name
 projectsRouter.delete("/:name", (req: Request, res: Response) => {
   try {

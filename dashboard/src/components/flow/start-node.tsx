@@ -2,7 +2,7 @@
 
 import { memo } from "react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
-import { GitBranch } from "lucide-react";
+import { GitBranch, Play } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { RalphStatus } from "@/lib/store";
 
@@ -18,63 +18,14 @@ export interface StartNodeData {
 }
 
 const statusBadge: Record<RalphStatus, { className: string; label: string }> = {
-  idle: { className: "bg-zinc-700 text-zinc-300", label: "空闲" },
+  idle: { className: "bg-[#F5F5F0] text-[#B1ADA1]", label: "空闲" },
   running: {
-    className: "bg-gradient-to-r from-cyan-500 to-blue-500 text-white",
+    className: "bg-[#FEF0E8] text-[#C15F3C]",
     label: "运行中",
   },
-  completed: { className: "bg-blue-900 text-blue-300", label: "已完成" },
-  error: { className: "bg-red-900 text-red-300", label: "错误" },
+  completed: { className: "bg-[#ECFDF5] text-[#22C55E]", label: "已完成" },
+  error: { className: "bg-[#FEF2F2] text-[#EF4444]", label: "错误" },
 };
-
-function CircularProgress({ percent }: { percent: number }) {
-  const radius = 20;
-  const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (percent / 100) * circumference;
-
-  return (
-    <div className="relative h-12 w-12">
-      <svg className="h-12 w-12 -rotate-90" viewBox="0 0 48 48">
-        <defs>
-          <linearGradient
-            id="startNodeProgressGradient"
-            x1="0%"
-            y1="0%"
-            x2="100%"
-            y2="0%"
-          >
-            <stop offset="0%" stopColor="#06B6D4" />
-            <stop offset="100%" stopColor="#3B82F6" />
-          </linearGradient>
-        </defs>
-        <circle
-          cx="24"
-          cy="24"
-          r={radius}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="3"
-          className="text-zinc-800"
-        />
-        <circle
-          cx="24"
-          cy="24"
-          r={radius}
-          fill="none"
-          stroke="url(#startNodeProgressGradient)"
-          strokeWidth="3"
-          strokeDasharray={circumference}
-          strokeDashoffset={offset}
-          strokeLinecap="round"
-          className="transition-all duration-500"
-        />
-      </svg>
-      <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-zinc-200">
-        {percent}%
-      </span>
-    </div>
-  );
-}
 
 function StartNodeComponent({ data }: NodeProps & { data: StartNodeData }) {
   const {
@@ -93,52 +44,71 @@ function StartNodeComponent({ data }: NodeProps & { data: StartNodeData }) {
   const badge = statusBadge[ralphStatus];
 
   return (
-    <div className="w-[320px] rounded-xl border border-zinc-800 bg-zinc-900 p-4 shadow-lg">
-      {/* Top gradient accent bar */}
-      <div className="absolute top-0 left-0 right-0 h-[2px] rounded-t-xl bg-gradient-to-r from-cyan-500 to-blue-500" />
+    <div className="w-[320px] rounded-xl bg-white p-4 shadow-[0_2px_12px_rgba(0,0,0,0.03)]">
+      {/* Header row: icon + project info */}
+      <div className="flex items-start gap-3">
+        {/* Terracotta icon square */}
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#C15F3C]">
+          <Play className="h-5 w-5 text-white" fill="white" />
+        </div>
 
-      {/* Header: status badge */}
-      <div className="mb-3 flex items-center justify-between">
-        <Badge className={badge.className}>
-          {ralphStatus === "running" &&
-          totalIterations != null &&
-          totalIterations > 0
-            ? `${badge.label} (${iteration ?? 0}/${totalIterations})`
-            : badge.label}
-        </Badge>
+        <div className="min-w-0 flex-1">
+          {/* Project name */}
+          <h3
+            className="mb-0.5 text-base leading-snug text-[#1A1A18]"
+            style={{ fontFamily: "var(--font-serif)", fontWeight: 600 }}
+          >
+            {projectName}
+          </h3>
+
+          {/* Status badge */}
+          <Badge className={`${badge.className} rounded-full text-[10px] font-medium`}>
+            {ralphStatus === "running" &&
+            totalIterations != null &&
+            totalIterations > 0
+              ? `${badge.label} (${iteration ?? 0}/${totalIterations})`
+              : badge.label}
+          </Badge>
+        </div>
       </div>
 
-      {/* Project name & description */}
-      <h3 className="mb-1 text-base font-bold text-zinc-100">{projectName}</h3>
+      {/* Description */}
       {description && (
-        <p className="mb-3 line-clamp-2 text-xs text-zinc-500">{description}</p>
+        <p className="mt-2 line-clamp-2 text-xs text-[#666666]">{description}</p>
       )}
 
-      {/* Progress section */}
-      <div className="flex items-center gap-3">
-        <CircularProgress percent={percent} />
-        <div>
-          <p className="text-sm font-medium text-zinc-300">
+      {/* Progress bar */}
+      <div className="mt-3">
+        <div className="mb-1 flex items-center justify-between">
+          <span className="text-xs font-medium text-[#666666]">
             {completedCount} / {totalCount} 完成
-          </p>
-          <p className="text-xs text-zinc-500">整体进度</p>
+          </span>
+          <span className="font-mono text-[10px] font-semibold text-[#C15F3C]">
+            {percent}%
+          </span>
+        </div>
+        <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#ECEAE5]">
+          <div
+            className="h-full rounded-full bg-[#C15F3C] transition-all duration-500"
+            style={{ width: `${percent}%` }}
+          />
         </div>
       </div>
 
       {/* Branch name */}
       {branchName && (
-        <div className="mt-3 flex items-center gap-1.5 rounded-md bg-zinc-800/60 px-2 py-1">
-          <GitBranch className="h-3 w-3 text-zinc-500" />
-          <span className="truncate font-mono text-xs text-zinc-400">
+        <div className="mt-3 flex items-center gap-1.5 rounded-lg bg-[#F5F5F0] px-2 py-1">
+          <GitBranch className="h-3 w-3 text-[#B1ADA1]" />
+          <span className="truncate font-mono text-xs text-[#666666]">
             {branchName}
           </span>
         </div>
       )}
 
-      {/* Connection handles - all directions */}
-      <Handle type="source" position={Position.Bottom} id="bottom" className="!h-2 !w-2 !border-zinc-700 !bg-cyan-500" />
-      <Handle type="source" position={Position.Right} id="right" className="!h-2 !w-2 !border-zinc-700 !bg-cyan-500" />
-      <Handle type="source" position={Position.Left} id="left" className="!h-2 !w-2 !border-zinc-700 !bg-cyan-500" />
+      {/* Connection handles */}
+      <Handle type="source" position={Position.Bottom} id="bottom" className="!h-2 !w-2 !border-[#E0DDD5] !bg-[#C15F3C]" />
+      <Handle type="source" position={Position.Right} id="right" className="!h-2 !w-2 !border-[#E0DDD5] !bg-[#C15F3C]" />
+      <Handle type="source" position={Position.Left} id="left" className="!h-2 !w-2 !border-[#E0DDD5] !bg-[#C15F3C]" />
     </div>
   );
 }

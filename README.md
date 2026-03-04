@@ -42,7 +42,7 @@ ralph init
 ### 启动 Web 控制台
 
 ```bash
-ralph start
+ralph dashboard
 ```
 
 自动打开浏览器访问 `http://localhost:3000`，提供：
@@ -76,9 +76,8 @@ npm update -g claude-ralph
 | 命令 | 说明 |
 |------|------|
 | `ralph init` | 交互式初始化引导 |
-| `ralph start` | 启动 Web 控制台（端口 3000 + 3001） |
-| `ralph start --no-open` | 启动但不自动打开浏览器 |
-| `ralph stop` | 停止 Web 控制台 |
+| `ralph dashboard` | 启动 Web 控制台 |
+| `ralph dashboard --no-open` | 启动但不自动打开浏览器 |
 | `ralph add-project` | 交互式添加项目 |
 | `ralph config <key> <value>` | 修改配置 |
 | `ralph --version` | 查看版本 |

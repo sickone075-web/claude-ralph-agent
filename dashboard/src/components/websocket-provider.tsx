@@ -1,6 +1,17 @@
-import { useEffect } from "react";
+import { createContext, useContext, useEffect } from "react";
 import { useWebSocket, useWebSocketEvents } from "@/hooks/use-websocket";
 import { useDashboardStore } from "@/lib/store";
+
+type EventHandler = (payload: Record<string, unknown>) => void;
+type SubscribeFn = (event: string, handler: EventHandler) => () => void;
+
+const WebSocketContext = createContext<{ subscribe: SubscribeFn } | null>(null);
+
+export function useWsSubscribe(): SubscribeFn {
+  const ctx = useContext(WebSocketContext);
+  if (!ctx) throw new Error("useWsSubscribe must be used within WebSocketProvider");
+  return ctx.subscribe;
+}
 
 export function WebSocketProvider({ children }: { children: React.ReactNode }) {
   const ws = useWebSocket();
@@ -30,5 +41,9 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
       .catch(() => {});
   }, [setPrd, setRalphStatus, setIteration, setStartedAt]);
 
-  return <>{children}</>;
+  return (
+    <WebSocketContext.Provider value={{ subscribe: ws.subscribe }}>
+      {children}
+    </WebSocketContext.Provider>
+  );
 }

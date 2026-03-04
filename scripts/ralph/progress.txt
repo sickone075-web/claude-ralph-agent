@@ -1,326 +1,247 @@
-## Codebase Patterns (from cli-global-install)
-- ProjectConfig and RepoConfig types must be kept in sync between src/lib/global-config.ts and dashboard/src/lib/config.ts
-- Root package.json is `claude-ralph`, type: module, bin: `./dist/bin/ralph.js`
-- Root tsconfig.json compiles src/ -> dist/, target ES2020, module ES2020
-- Dashboard is a Next.js app in dashboard/ with its own package.json
-- scripts/ralph/ contains runtime data (prd.json, progress.txt, archive/); scripts/ contains shared tools (ralph.sh, CLAUDE.md)
-- Use `npx tsc --noEmit` for root TypeScript checks; `cd dashboard && npm run build` for dashboard checks
-- CLI uses Commander.js with ESM imports; version read from package.json via readFileSync (not import assertion)
-- `npm link` at root makes `ralph` command available globally for testing
-- Global config at ~/.ralph/config.json; use src/lib/global-config.ts for read/write; atomic writes use tmp file in same dir (not os.tmpdir) to avoid cross-drive rename failures on Windows
-- Dashboard uses Next.js 16 with tsx for WS server; `next start` for production, standalone mode when available
-- On Windows, use `.cmd` suffixed binaries from node_modules/.bin (next.cmd, tsx.cmd) and set shell: true for spawn
-- Port check: use net.createServer trick to test if port is available before starting servers
-- Dashboard config (dashboard/src/lib/config.ts) mirrors src/lib/global-config.ts structure; all API routes use getActiveProjectPaths() for project-relative paths
-- ws.ts (WebSocket server) runs standalone via tsx and imports from relative paths (../src/lib/), not @/lib/ aliases
-- Next.js 16 dynamic route params are `Promise<{ name: string }>` — must be awaited
-- Pre-existing lint errors (7 total) won't block commits; they're in ws.ts, logs, story components, websocket hook
-- Next.js standalone output: server.js may be at .next/standalone/server.js or .next/standalone/dashboard/server.js depending on workspace root detection
-- npm publish: files field is whitelist; need dashboard/.npmignore to override dashboard/.gitignore's .next/ exclusion
-
 # Ralph Progress Log
-Started: Tue Mar  3 16:05:19     2026
+Started: Wed Mar  4 01:15:11     2026
+---
 
 ## Codebase Patterns
-- PID file path: scripts/ralph/.ralph-pid (SCRIPT_DIR-relative)
-- `kill -0 $pid` works on both Unix and Windows (Git Bash) for process liveness check
-- ralph.sh uses `set -e` + `trap cleanup EXIT` for cleanup on any exit
-- ralph.sh reads config from ~/.ralph/config.json with CLI args as override
-- Skills are markdown files at skills/<name>/SKILL.md with frontmatter (name, description, user-invocable)
-- ralph.sh CLI: `--tool amp|claude --timeout <min> --webhook <url> <max_iterations>`
-- /ralph-stop uses platform detection (uname -s) to choose between taskkill (Windows) and kill (Unix)
-- On Windows (Git Bash), taskkill uses //pid and //t //f (double-slash for MSYS path translation)
-- `getPidFilePath()` in ralph-process.ts resolves PID path from active project config, reusable across modules
-- chokidar needs `add`/`unlink` handlers for file creation/deletion, not just `change`
-- `request.json()` throws on empty body — wrap in try/catch for optional-body API routes
-- ralph.sh CLI arg order: `--tool X [--timeout Y] [--webhook Z] <maxIterations>` (positional last)
+- Dashboard is a Vite SPA with pages in `dashboard/src/pages/` and components in `dashboard/src/components/`
+- Router is in `dashboard/src/router.tsx` using react-router-dom v7
+- Pre-existing TS errors in `server/routes/archives.ts` and `server/routes/projects.ts` (string | string[] type issues) — not introduced by this work
+- Sidebar nav items are defined in `dashboard/src/components/sidebar.tsx` as a `navItems` array
+- Project uses Tailwind v4 with CSS variables in `dashboard/src/globals.css`
+- Claude Light Theme: all CSS variables are hex-based (not oklch), defined in `:root` and `.dark` blocks in globals.css
+- Font stack: Inter (UI), JetBrains Mono (code/data), Cormorant Garamond (headings/serif) — imported via Google Fonts in index.html
+- `--font-serif` CSS variable available for Cormorant Garamond via `var(--font-serif)` or `font-serif` Tailwind class
+- WebSocket provider wraps dashboard layout in router.tsx
+- Dashboard source is at `dashboard/` from repo root (NOT under `scripts/ralph/dashboard/`)
+- Design system reference is at `design-system/MASTER.md` from repo root
+- RalphStatusIndicator supports `compact` prop for icon-only display
+- Server log cache module is at `dashboard/server/log-cache.ts` — tracks current Story ID and caches logs by story
+- Express v5 `req.params` returns `string | string[]` — use `as string` cast for single params
+- WebSocket `ralph:output` events now include `storyId` field (string | null)
+- Git-specific API routes are under `/api/git/*` in `dashboard/server/routes/git.ts`
+- WebSocket context: `useWsSubscribe()` from `websocket-provider.tsx` lets any child component subscribe to WS events without creating new connections
 
 ---
 
-## 2026-03-03 - US-001
-- Implemented PID file management in ralph.sh
-- Files changed: scripts/ralph/ralph.sh, .gitignore
-- **What was implemented:**
-  - Added PID_FILE variable pointing to scripts/ralph/.ralph-pid
-  - Added cleanup() function that removes PID file, triggered via `trap cleanup EXIT`
-  - Added startup check: if .ralph-pid exists and process is alive (kill -0), error exit; if dead, overwrite
-  - Writes current PID ($$) to .ralph-pid on startup
-  - Added .ralph-pid to .gitignore
+## 2026-03-04 - US-001
+- Deleted terminal.tsx, stories.tsx, logs.tsx, archives.tsx pages
+- Deleted terminal-view.tsx component
+- Removed @xterm/xterm, @xterm/addon-fit, @xterm/addon-web-links from package.json
+- Updated router.tsx: removed page routes, added redirect routes for old paths to /dashboard
+- Ran npm install to update lock file
+- Verified no remaining references to deleted files
+- TypeScript check passes (only pre-existing server errors remain)
+- Files changed: src/pages/terminal.tsx, src/pages/stories.tsx, src/pages/logs.tsx, src/pages/archives.tsx, src/components/terminal-view.tsx (deleted), src/router.tsx, package.json, package-lock.json
 - **Learnings for future iterations:**
-  - PID file is at scripts/ralph/.ralph-pid (SCRIPT_DIR-relative)
-  - `trap cleanup EXIT` covers normal exit, error exit, and signal termination
-  - `kill -0 $pid` works on both Unix and Windows (Git Bash) for process liveness check
-  - ralph.sh uses `set -e` so any unhandled error triggers EXIT trap
+  - The sidebar.tsx still has nav items for terminal/stories/logs/archives (links only, not imports) — US-002 will clean those up
+  - Pre-existing TS errors exist in server routes — don't be alarmed by them
+  - xterm dependencies had missing type declarations even before removal (types weren't installed)
 ---
 
-## 2026-03-03 - US-002
-- Created /ralph-start Skill at skills/start/SKILL.md
-- Files changed: skills/start/SKILL.md
-- **What was implemented:**
-  - Skill with name `ralph-start`, user-invocable: true
-  - 7-step flow: check PID → read config → apply overrides → check PRD → print summary → launch background → confirm
-  - Reads ~/.ralph/config.json for defaults (defaultTool, defaultMaxIterations, timeoutMinutes, webhookUrl)
-  - Supports --tool, --iterations, --timeout, --webhook parameter overrides
-  - Reads scripts/ralph/prd.json to count pending stories
-  - Checks .ralph-pid to detect already-running instance
-  - Uses Bash tool with run_in_background to launch ralph.sh
+## 2026-03-04 - US-002
+- Rewrote sidebar.tsx as 64px icon rail with Claude light theme
+- Removed Terminal, Stories, Logs, Archives nav items and icons
+- Sidebar: #EDEDEA background, 1px #E0DDD5 right border
+- Logo: 40x40 rounded square, #C15F3C background, white 'R' in Cormorant Garamond serif
+- Active nav: #C15F3C background with white icon; Inactive: transparent with #999999 icon
+- Bottom: Settings icon + Ralph status dot (10x10 green circle)
+- Added `compact` prop to RalphStatusIndicator for icon rail mode (dot only, no text)
+- Removed ProjectSwitcher from sidebar (moved to dashboard header area)
+- Removed Sheet/mobile drawer dependencies from sidebar, replaced with simple mobile top bar
+- Router already has redirect routes for old paths → /dashboard (from US-001)
+- TypeScript check passes (only pre-existing server errors remain)
+- Files changed: dashboard/src/components/sidebar.tsx, dashboard/src/components/ralph-status-indicator.tsx
 - **Learnings for future iterations:**
-  - Skills are pure markdown instruction files at skills/<name>/SKILL.md
-  - Skill frontmatter requires: name, description, user-invocable fields
-  - Existing skills (prd, ralph) follow the same pattern in skills/ directory
-  - ralph.sh CLI: `--tool amp|claude --timeout <min> --webhook <url> <max_iterations>`
+  - The sidebar was completely rewritten, not just modified — old dark theme classes all replaced
+  - RalphStatusIndicator now accepts `compact` prop for different display modes
+  - ProjectSwitcher component still exists but is no longer in sidebar — may be used in dashboard header
+  - Design system MASTER.md is at `design-system/MASTER.md` (not under scripts/ralph/dashboard)
+  - Dashboard source is at `dashboard/` from repo root, not `scripts/ralph/dashboard/`
 ---
 
-## 2026-03-03 - US-003
-- Created /ralph-stop Skill at skills/stop/SKILL.md
-- Files changed: skills/stop/SKILL.md
-- **What was implemented:**
-  - Skill with name `ralph-stop`, user-invocable: true
-  - 6-step flow: check PID file → verify process alive → terminate (platform-aware) → verify termination → cleanup → confirm
-  - Platform detection via `uname -s` for Windows (taskkill) vs Unix (kill) compatibility
-  - Stale PID file cleanup when process is already dead
-  - Fallback to `kill -9` if graceful termination fails
+## 2026-03-04 - US-003
+- Created `dashboard/server/log-cache.ts` — in-memory log cache with Map<string, string[]> keyed by Story ID
+- Log cache parses progress.txt to determine current Story ID, also detects Story ID changes from output text
+- Modified `dashboard/server/index.ts` to intercept `ralph:output` events: attaches `storyId` field to payload and caches log lines
+- Log cache clears on ralph process start (fresh run)
+- Added `GET /api/logs` route returning all execution logs
+- Added `GET /api/logs/:storyId` route returning logs filtered by Story ID
+- Existing `/api/logs/progress` and `/api/logs/git` routes preserved
+- TypeScript check passes (only pre-existing server errors remain)
+- Files changed: `dashboard/server/log-cache.ts` (new), `dashboard/server/index.ts`, `dashboard/server/routes/logs.ts`
 - **Learnings for future iterations:**
-  - /ralph-stop uses platform detection (uname -s) to choose between taskkill (Windows) and kill (Unix)
-  - On Windows (Git Bash), taskkill uses //pid and //t //f (double-slash for MSYS path translation)
-  - Skills should handle stale PID files gracefully (process died without cleanup)
+  - Express v5 route params are typed as `string | string[]`, need `as string` cast
+  - Route order matters: specific routes (`/progress`, `/git`) must come before param routes (`/:storyId`)
+  - The `onEvent` callback in index.ts is the single point to intercept all Ralph process events before broadcasting
+  - Log cache is in-memory only — clears on server restart (by design)
 ---
 
-## 2026-03-03 - US-004
-- Terminal page converted to monitoring-only mode
-- Files changed: dashboard/src/app/(dashboard)/terminal/page.tsx
-- **What was implemented:**
-  - Removed imports: Play, Square icons and Select component family
-  - Removed state: tool, maxIterations, isStarting, isStopping
-  - Removed handlers: handleStart, handleStop and their API call logic
-  - Removed entire "Row 2: Controls" section (tool selector, iterations selector, start/stop buttons)
-  - Updated welcome message from "使用上方控件启动" to "在 Claude Code 中使用 /ralph-start 启动循环"
-  - Retained: status badge, iteration progress, elapsed time, WebSocket indicator, live terminal, iteration history tabs, toolbar (clear/auto-scroll/download), completion summary
+## 2026-03-04 - US-004
+- Created `dashboard/server/routes/git.ts` with `GET /api/git/commits?storyId=US-XXX` endpoint
+- Uses simple-git `git.log({ "--grep": storyId })` to filter commits by Story ID in commit message
+- Returns array of `{ hash, message, author, date }` objects; empty array when no matches
+- Registered gitRouter at `/api/git` in `dashboard/server/index.ts`
+- TypeScript check passes (only pre-existing server errors remain)
+- Files changed: `dashboard/server/routes/git.ts` (new), `dashboard/server/index.ts`
 - **Learnings for future iterations:**
-  - Terminal page is a pure monitoring view now — all launch control is via /ralph-start Skill
-  - The page still subscribes to ralph:output and ralph:iteration WebSocket events for real-time monitoring
-  - Loader2 icon is still used by the dynamic import loading fallback, don't remove it
-  - The completion summary logic uses sessionStartRef to track session duration across status changes
+  - simple-git `log()` accepts `"--grep"` option to filter commits by message pattern
+  - The existing `/api/logs/git` endpoint in logs.ts fetches general git history; the new `/api/git/commits` is for story-specific filtering
+  - Git routes are now separate from log routes — `/api/git/*` vs `/api/logs/*`
 ---
 
-## 2026-03-03 - US-005
-- Dashboard now detects externally started Ralph via PID file
-- Files changed: dashboard/src/lib/ralph-process.ts, dashboard/server/ws.ts
-- **What was implemented:**
-  - Added `getPidFilePath()` helper that resolves PID file path from active project config
-  - Added `detectRunningFromPid()` function that reads .ralph-pid and checks process liveness via `process.kill(pid, 0)`
-  - Updated `getRalphStatus()` to fallback to PID file detection when no in-memory process exists
-  - Updated `isRunning()` to also check PID file for externally started processes
-  - Added .ralph-pid to ws.ts file watcher list
-  - Added `change`, `add`, and `unlink` handlers for PID file to broadcast `ralph:status` events
-  - When PID file appears/changes → check process alive → broadcast `running`
-  - When PID file disappears → broadcast `idle`
+## 2026-03-04 - US-006
+- Implemented execution log tab in Story detail drawer with WebSocket real-time streaming
+- Created `dashboard/src/components/flow/story-log-tab.tsx` — standalone log tab component
+- Updated `dashboard/src/components/websocket-provider.tsx` — added WebSocket context (useWsSubscribe hook) so child components can subscribe to WS events without creating separate connections
+- Log tab loads historical logs from `GET /api/logs/:storyId` on mount
+- When Story is running, subscribes to `ralph:output` WS events filtered by storyId for real-time log streaming
+- Toolbar with story ID label (JetBrains Mono 11px #999999) and pause/resume autoscroll button (#E0DDD5 border 6px rounded)
+- Log area: #FAFAF7 warm off-white background, JetBrains Mono 11px, lineHeight 1.6
+- Log color coding: commands #B1ADA1, info #666666, Story ID mentions #C15F3C, code additions #22C55E, warnings #F59E0B
+- Live indicator: terracotta pulsing dot + cursor block when Story is running
+- Empty state with centered icon and hint text
+- Updated story-detail-panel.tsx to use StoryLogTab component instead of placeholder
+- TypeScript check passes (only pre-existing server errors remain)
+- Files changed: `dashboard/src/components/flow/story-log-tab.tsx` (new), `dashboard/src/components/websocket-provider.tsx`, `dashboard/src/components/flow/story-detail-panel.tsx`
 - **Learnings for future iterations:**
-  - `process.kill(pid, 0)` works on both Windows and Unix for process liveness check (same as shell `kill -0`)
-  - chokidar needs both `add`/`unlink` handlers for file create/delete events, not just `change`
-  - `getPidFilePath()` is exported for reuse by both ralph-process.ts and ws.ts
-  - The PID file path is derived from active project config: `{projectPath}/scripts/ralph/.ralph-pid`
+  - WebSocket context pattern: WebSocketProvider now exposes `useWsSubscribe()` hook via React context so any child component can subscribe to WS events
+  - The `ralph:output` payload includes `text` (log line content) and `storyId` (which story it belongs to) — filter by storyId to get story-specific logs
+  - Auto-scroll pattern: use a ref on the scroll container and set scrollTop = scrollHeight in a useEffect triggered by log array changes
+  - Log color coding uses regex patterns on raw log text to identify line types (commands, warnings, story references, code additions)
 ---
 
-## 2026-03-03 - US-006
-- Start API now supports empty body calls and passes all parameters to ralph.sh
-- Files changed: dashboard/src/app/api/ralph/start/route.ts, dashboard/src/lib/ralph-process.ts
-- **What was implemented:**
-  - route.ts: `request.json()` wrapped in try/catch to handle empty body gracefully
-  - route.ts: Reads `getConfig()` for defaults (defaultTool, defaultMaxIterations, timeoutMinutes, webhookUrl)
-  - route.ts: Provided body params override config defaults; missing params fall back to config
-  - route.ts: Response now includes timeout and webhook in data payload
-  - ralph-process.ts: `startRalph` params extended with optional `timeout` and `webhook`
-  - ralph-process.ts: Args built dynamically — `--timeout` and `--webhook` only added when values are present
-  - ralph-process.ts: `maxIterations` remains the last positional argument as ralph.sh expects
+## 2026-03-04 - US-007
+- Created `dashboard/src/components/flow/story-git-tab.tsx` — standalone Git commits tab component
+- Fetches commits from `GET /api/git/commits?storyId=xxx` (implemented in US-004)
+- Each commit shows: short hash (JetBrains Mono terracotta #C15F3C), message (Inter 13px #1A1A18), author (#666666), relative time (#999999)
+- Commits listed in reverse chronological order with #E0DDD5 separator lines
+- Empty state with centered icon and hint text (#B1ADA1)
+- Loading state with spinning Loader2 icon
+- Updated story-detail-panel.tsx: replaced Git tab placeholder with StoryGitTab component
+- TypeScript check passes (only pre-existing server errors remain)
+- Files changed: `dashboard/src/components/flow/story-git-tab.tsx` (new), `dashboard/src/components/flow/story-detail-panel.tsx`
 - **Learnings for future iterations:**
-  - `request.json()` throws on empty body — wrap in try/catch for optional body APIs
-  - ralph.sh CLI arg order: `--tool X [--timeout Y] [--webhook Z] <maxIterations>` (positional arg last)
-  - `getConfig()` from `@/lib/config` merges file config with DEFAULTS, always returns full DashboardConfig
+  - Tab components follow a consistent pattern: props with `{ story: Story }`, fetch data on mount with `useEffect`, loading/empty/data states
+  - The `GitCommit` type is already defined in `lib/types.ts` — reuse it
+  - `formatRelativeTime` is a local helper; if more tabs need it, consider extracting to a shared util
+  - Git commits API returns data in `{ data: GitCommit[] }` wrapper matching the `ApiResponse<T>` pattern
 ---
 
-## 2026-03-03 - US-001 (multi-repo-support)
-- What was implemented: Added RepoConfig interface and optional repositories field to ProjectConfig in both CLI and Dashboard config modules
-- Files changed:
-  - src/lib/global-config.ts - Added RepoConfig interface, added repositories? field to ProjectConfig
-  - dashboard/src/lib/config.ts - Synced RepoConfig interface and repositories? field to ProjectConfig
+## 2026-03-04 - US-008
+- Created `dashboard/src/components/flow/story-timeline-tab.tsx` — vertical timeline component for Story status changes
+- Updated `dashboard/src/components/flow/story-detail-panel.tsx` — replaced timeline placeholder with StoryTimelineTab component
+- Timeline shows: "创建任务" (pending), "开始执行" (running), "执行完成"/"执行失败" events
+- Timeline node dot colors match status: pending #B1ADA1, running #C15F3C, completed #22C55E, failed #EF4444
+- Connection line #E0DDD5, event labels Inter 13px #1A1A18, timestamps JetBrains Mono 11px #999999
+- Duration between adjacent events shown as "耗时 X 分 Y 秒"
+- Total duration summary shown at top in #FAFAF7 box
+- Running stories: live timer updates every second via setInterval, displayed in terracotta #C15F3C
+- Running status dot has pulse animation (timeline-pulse keyframe)
+- Empty state when no startedAt data available
+- Data sourced from Story object's `startedAt` and `completedAt` fields
+- TypeScript check passes (only pre-existing server errors remain)
+- Files changed: `dashboard/src/components/flow/story-timeline-tab.tsx` (new), `dashboard/src/components/flow/story-detail-panel.tsx`
 - **Learnings for future iterations:**
-  - The prd.json on main branch contains the old PRD from prior feature branch; must write new PRD for current branch
-  - Both root `npm run build` and `cd dashboard && npm run build` must pass for type changes
-  - RepoConfig uses union types for `type` field: 'docs'|'backend'|'frontend'|'app'|'other'
-  - Optional `repositories?` field ensures backward compatibility — existing single-repo projects need no changes
+  - Tab components follow consistent pattern: props `{ story: Story }`, build UI from story data, handle empty/loading states
+  - `useLiveElapsed` hook pattern: useRef for interval + cleanup in useEffect, controlled by `active` boolean
+  - Timeline events are derived from Story fields (startedAt, completedAt, status) — no separate API call needed
+  - Inline `<style>` tag for keyframe animations works well for component-scoped CSS animations
 ---
 
-## 2026-03-03 - US-002 (multi-repo-support)
-- What was implemented: `ralph add-repo` CLI command for interactively adding repository configurations to the active project
-- Files changed:
-  - src/commands/add-repo.ts (new) - Interactive prompts for repo name, path, type, priority, checks
-  - src/bin/ralph.ts - Imported and registered add-repo command
+## 2026-03-04 - US-005
+- Implemented enhanced Story detail drawer component (story-detail-panel.tsx)
+- Full rewrite: Sheet-based right-side drawer, 560px width, white bg with warm shadow
+- Header: Story ID (JetBrains Mono 13px bold terracotta), status badge (pill style), close button, title (Cormorant Garamond 20px 600)
+- 4 tabs: 详情, 日志, Git, 时间线 — last 3 with placeholder content for future stories
+- Claude-themed tab styling via `.tab-trigger-claude` CSS class: active #C15F3C with 2px bottom border, inactive #B1ADA1
+- Details tab: description, acceptance criteria (checkbox style with green/unchecked states), priority badge, notes
+- Edit mode: toggle button, inline editing for title/description/notes/criteria, save via PUT /api/prd/stories/:id
+- story-flow.tsx already wired with onNodeClick → setSelectedStory → setPanelOpen
+- Added tab-trigger-claude CSS rules to globals.css
+- Files changed: `dashboard/src/components/flow/story-detail-panel.tsx`, `dashboard/src/globals.css`
 - **Learnings for future iterations:**
-  - Follow add-project.ts pattern: read config, validate active project, prompt inputs, write config
-  - RepoConfig type import from global-config.ts works for type-safe prompt choices
-  - `inquirer.prompt` with `type: 'list'` for enum-like selections (repo type), `type: 'number'` for priority
-  - docs repos default priority to 0, others to 1 — matches US-007 execution ordering (lower runs first)
-  - Empty checks input is filtered out with `.filter(Boolean)` after split/trim
+  - The Sheet component from shadcn/ui accepts `showCloseButton={false}` to suppress default close button (custom close button used instead)
+  - Tab styling override uses `variant="line"` on TabsList plus custom CSS class `.tab-trigger-claude` for Claude theme colors
+  - The `after` pseudo-element from the base Tabs component provides underline on active state — custom CSS overrides its color to terracotta
+  - Edit state uses PUT /api/prd/stories/:id endpoint (not PATCH /api/prd) — this endpoint exists in prd.ts routes
 ---
 
-## 2026-03-03 - US-003 (multi-repo-support)
-- What was implemented: `ralph remove-repo` CLI command for interactively removing repository configurations from the active project
-- Files changed:
-  - src/commands/remove-repo.ts (new) - Interactive prompts to select repo, show details, confirm deletion
-  - src/bin/ralph.ts - Imported and registered remove-repo command
+## 2026-03-04 - US-009
+- Updated archive-switcher.tsx from dark theme (zinc-800/900) to Claude light theme
+- Archive Switcher: white bg, #E0DDD5 border, rounded-lg (8px), hover #ECEAE5 border transition
+- Dropdown content: white bg, #E0DDD5 border, focus items use #F5F5F0 bg
+- Current task indicator uses terracotta #C15F3C Radio icon; archive items use #999999 Archive icon
+- Archive list items show: feature name, date, completion percentage, and story count (completed/total)
+- Updated dashboard.tsx header from dark theme to Claude light theme: white bg, #E0DDD5 border-b
+- Header title uses Cormorant Garamond serif font, #1A1A18 text, LayoutDashboard icon #B1ADA1
+- Skeleton states updated to match light theme (white cards, #F5F5F0 bg, #E0DDD5 borders)
+- Archive switching functionality was already fully wired: selecting archive loads stories into StoryFlow with readOnly mode
+- TypeScript check passes (only pre-existing server errors remain)
+- Files changed: `dashboard/src/components/flow/archive-switcher.tsx`, `dashboard/src/pages/dashboard.tsx`
 - **Learnings for future iterations:**
-  - Follow add-repo.ts pattern but inverse: read config, list repos, confirm, delete, write config
-  - `delete repos[name]` removes a key from Record; `delete project.repositories` removes field when empty
-  - When repositories becomes empty object after deletion, clean up by removing the field entirely (matches AC)
-  - Inquirer `type: 'confirm'` with `default: false` prevents accidental deletion
+  - The archive switcher was already fully functional — just needed visual theme update from dark to light
+  - Select component from shadcn/ui supports `focus:bg-[color]` and `focus:text-[color]` classes for item hover styling
+  - Dashboard header and archive-switcher styling should stay in sync with the Claude light theme palette
+  - Archive data flow: dashboard.tsx manages archiveStories/archiveLabel state → passes to StoryFlow which is a pure presentation component
 ---
 
-## 2026-03-03 - US-004 (multi-repo-support)
-- What was implemented: Added `stepRepositories` step to init.ts wizard between stepFirstProject and stepPluginGuide. Asks if project is multi-repo, then loops to add repos with same input fields as add-repo.ts (name, path, type, priority, checks). Updated stepCompletion to display repository list in config summary.
-- Files changed:
-  - src/commands/init.ts - Added RepoConfig import, REPO_TYPES const, stepRepositories function (~100 lines), updated stepCompletion with repo display, inserted step call in runInit flow
+## 2026-03-04 - US-010
+- Updated globals.css `:root` and `.dark` CSS variables from oklch to hex-based Claude light theme palette
+- Background #F5F5F0 (warm cream), cards #FFFFFF, accent #C15F3C (terracotta), border #E0DDD5
+- Removed `class="dark"` from index.html `<html>` tag
+- Replaced Google Fonts: Geist → Inter + JetBrains Mono + Cormorant Garamond
+- Added `--font-serif` CSS variable and `--font-serif` theme token for Cormorant Garamond
+- Updated brand colors from cyan/blue to terracotta in all animations (glow, pulse-glow, card-glow, gradient-border)
+- Updated skeleton background from oklch dark to warm #ECEAE5
+- Updated settings.tsx: all zinc-900/800/700 → white/E0DDD5, save button from cyan gradient to terracotta solid
+- Updated ralph-status-indicator.tsx: zinc-500/cyan-500 → Claude theme status colors
+- Updated repo-overview-cards.tsx: all zinc/cyan references → Claude light theme colors
+- Updated story-flow.tsx: edge stroke colors #3f3f46→#E0DDD5, running edges #06B6D4→#C15F3C, background dots #27272a→#E0DDD5
+- Updated slider.tsx: range fill from cyan-to-blue gradient → solid terracotta
+- TypeScript check passes (only pre-existing server errors remain)
+- Vite build passes
+- Files changed: `dashboard/index.html`, `dashboard/src/globals.css`, `dashboard/src/pages/settings.tsx`, `dashboard/src/components/ralph-status-indicator.tsx`, `dashboard/src/components/repo-overview-cards.tsx`, `dashboard/src/components/flow/story-flow.tsx`, `dashboard/src/components/ui/slider.tsx`
 - **Learnings for future iterations:**
-  - Reused same prompt structure as add-repo.ts but inline (no function extraction needed since patterns are simple)
-  - stepRepositories checks for activeProject existence before running — if no project was added, step is skipped
-  - `project.repositories!` non-null assertion is safe after the `if (!project.repositories)` guard
-  - Step numbering shifted: plugin guide is now step 8, completion is step 9
+  - The `.dark` CSS block is kept but now mirrors the light theme — this avoids issues if any component still references dark: variants
+  - Shadcn UI components automatically pick up new theme via CSS variables — no need to edit individual shadcn components
+  - Flow node components (start-node, story-node, end-node) still have zinc/cyan hardcoded — these are addressed in US-011
+  - kanban-board, kanban-card, project-switcher, story-sheet, story-edit-dialog still have dark theme colors — they may be cleaned up in US-012 if unused
+  - The `font-serif` Tailwind class maps to `var(--font-serif)` which is Cormorant Garamond — use for headings
 ---
 
-## 2026-03-03 - US-005 (multi-repo-support)
-- What was implemented: Created `scripts/ralph/CLAUDE-docs.md` — a documentation-repository-specific agent template based on CLAUDE.md
-- Files changed:
-  - scripts/ralph/CLAUDE-docs.md (new) - Documentation agent instructions with API contract, technical design, and architecture doc focus
+## 2026-03-04 - US-011
+- Redesigned all three flow chart node components with Claude light theme
+- **start-node.tsx**: White card with 12px rounded corners, subtle shadow, left 48x48 terracotta (#C15F3C) icon square with white Play icon, project name in Cormorant Garamond 16px 600, linear progress bar (#ECEAE5 bg + #C15F3C fill), status badges with light tint backgrounds
+- **story-node.tsx**: 4 states redesigned — Completed (green border #22C55E33, check in #ECFDF5 circle, green ID), Running (terracotta border 1.5px, warm glow shadow, loader in #FEF0E8 circle, terracotta ID + timer), Pending (#E0DDD5 border, muted dot in #F5F5F0 circle, muted text), Failed (red border #EF444433, X in #FEF2F2 circle, red ID)
+- **end-node.tsx**: Compact 120x64 white card, 12px rounded, flag icon + "End" text in #B1ADA1, green accent when all completed
+- Updated connection line strokeWidth from 2 to 1.5px (edge colors already correct from US-010)
+- All handle styles updated: border #E0DDD5, bg #C15F3C (replacing zinc-700/cyan-500)
+- Running node pulse animation (`animate-pulse-glow`) already uses terracotta shadow from US-010 globals.css update
+- TypeScript check passes (only pre-existing server errors remain)
+- Vite build passes
+- Files changed: `dashboard/src/components/flow/start-node.tsx`, `dashboard/src/components/flow/story-node.tsx`, `dashboard/src/components/flow/end-node.tsx`, `dashboard/src/components/flow/story-flow.tsx`
 - **Learnings for future iterations:**
-  - CLAUDE-docs.md mirrors CLAUDE.md structure (task flow, progress report, codebase patterns, stop condition) but adapts content for docs repos
-  - Key differences from CLAUDE.md: commit prefix is `docs:` instead of `feat:`, quality checks are markdown/structure-based instead of typecheck/lint, documentation focus section replaces coding focus
-  - The template includes a "Reading Other Repositories" section to guide docs agents on cross-repo reads via absolute paths
-  - US-006 will use this template: ralph.sh selects CLAUDE-docs.md when repo type=docs
+  - Start node switched from circular SVG progress to linear bar — simpler and more aligned with Claude aesthetic
+  - Story node uses 32px round icon circles for status (not square blocks) — matches the design system spec
+  - End node simplified to 120x64 card with flag + "End" text — much cleaner than the old two-state (completed/pending) design
+  - All hardcoded zinc/cyan colors in flow nodes are now replaced — no more dark theme remnants in flow components
+  - Handle styling uses `!border-[#E0DDD5] !bg-[#C15F3C]` pattern for React Flow handles
 ---
 
-## 2026-03-03 - US-006 (multi-repo-support)
-- What was implemented: Modified ralph.sh to auto-detect which repo the current working directory belongs to (by matching pwd against active project's repositories paths), inject sibling repo info into the claude prompt, and select the appropriate template (CLAUDE.md vs CLAUDE-docs.md) based on repo type
-- Files changed:
-  - scripts/ralph/ralph.sh - Added repo context detection block (~65 lines after config reading), template selection logic in main loop, modified claude invocation to support piping combined content
-- Key behaviors:
-  - Matches `pwd -P` against repo paths in active project's repositories config
-  - Generates markdown table of all sibling repos (name, type, path) as injection block
-  - Specially marks type=docs repos with Read tool guidance
-  - Selects CLAUDE-docs.md for docs repos, CLAUDE.md for all others
-  - Checks for repo-local templates at `{repo_path}/scripts/ralph/CLAUDE.md` (or CLAUDE-docs.md)
-  - Uses `{ cat template; printf inject; } | claude --print` for injection (doesn't modify template files)
-  - Single-repo projects (no repositories config) have unchanged behavior
+## 2026-03-04 - US-012
+- Cleaned up all dead code from the dashboard restructure
+- **Deleted unused component files:** kanban-board.tsx, kanban-card.tsx, story-edit-dialog.tsx, story-sheet.tsx, project-switcher.tsx
+- **Removed `@hello-pangea/dnd` dependency** from package.json (only used by deleted kanban components)
+- **Removed `ralph:stdin` WebSocket handler** from server/index.ts (terminal page no longer exists)
+- **Removed unused `sendStdin` import** from server/index.ts
+- **store.ts was already clean** — no terminal-related state fields found
+- **WebSocket hooks (use-websocket.ts, websocket-provider.tsx) were already clean** — no terminal-specific events
+- Ran `npm install` to update lock file
+- TypeScript check passes (only pre-existing server errors in archives.ts and projects.ts remain)
+- Vite build passes
+- Files changed: `dashboard/src/components/kanban-board.tsx` (deleted), `dashboard/src/components/kanban-card.tsx` (deleted), `dashboard/src/components/story-edit-dialog.tsx` (deleted), `dashboard/src/components/story-sheet.tsx` (deleted), `dashboard/src/components/project-switcher.tsx` (deleted), `dashboard/package.json`, `dashboard/package-lock.json`, `dashboard/server/index.ts`
 - **Learnings for future iterations:**
-  - `pwd -P` resolves symlinks for reliable path comparison across platforms
-  - `cd "$path" 2>/dev/null && pwd -P` normalizes paths (handles Windows/MSYS differences)
-  - jq `--arg` with nested selects works for extracting project-specific repo data
-  - The injection block is built once before the loop but template selection happens per-iteration (allows future dynamic changes)
-  - Using `printf '%s'` instead of `echo` avoids unwanted newline interpretation in the inject block
----
-
-## 2026-03-03 - US-007 (multi-repo-support)
-- What was implemented: `ralph run-all` command for orchestrating multi-repo ralph loops by priority. Reads active project's repositories config, groups by priority, runs same-priority repos in parallel via Promise.all, waits for each priority stage to complete before starting the next. Each repo gets its own labeled output prefix. Includes fallback to single-repo mode when no repositories configured. Also includes --repo and --type filter options (US-008 acceptance criteria).
-- Files changed:
-  - src/commands/run-all.ts (new) - Full multi-repo orchestration with priority-based staging, parallel execution, summary report
-  - src/bin/ralph.ts - Imported and registered run-all command with --repo and --type options
-- **Learnings for future iterations:**
-  - Promise.all with per-repo spawn Promises enables parallel execution within a priority group
-  - findRalphScript checks repo-local scripts/ralph/ralph.sh first, then falls back to global
-  - Priority groups sorted ascending (0 runs before 1) — docs repos with priority 0 run first
-  - Each child process stdout/stderr is prefixed with `[repoName]` for clear log separation
-  - Single-repo fallback uses stdio: 'inherit' for direct passthrough (no prefix needed)
-  - US-008 filter logic (--repo, --type) was simple enough to include in the same implementation
----
-
-## 2026-03-03 - US-009 (multi-repo-support)
-- What was implemented: Updated skills/ralph/SKILL.md to support multi-repo PRD splitting. Added multi-repo detection workflow (read ~/.ralph/config.json), repo field requirement for multi-repo stories, per-repo prd.json write rules, per-repo archive checking, multi-repo examples (docs/backend/frontend split), and updated checklist with multi-repo items.
-- Files changed:
-  - skills/ralph/SKILL.md - Major rewrite: added multi-repo output format, write rules, archive rules, multi-repo examples, updated conversion rules and checklist
-- **Learnings for future iterations:**
-  - SKILL.md is a documentation/instruction file — no TypeScript code changes needed, but both root and dashboard builds still pass
-  - Multi-repo story constraint: each story must have `repo` field pointing to a repositories key, and each story can only modify one repo
-  - Docs repos use "文档格式规范检查通过" instead of "类型检查通过" as acceptance criteria
-  - Story IDs remain globally sequential (US-001, US-002...) across repos, not per-repo numbering
-  - The skill instructs Claude Code to read ~/.ralph/config.json at startup to detect multi-repo mode before conversion begins
----
-
-## 2026-03-03 - US-010 (multi-repo-support)
-- What was implemented: Updated skills/prd/SKILL.md to add multi-repo awareness. Added new "第一步：多仓库检测" step that reads ~/.ralph/config.json before brainstorming. Multi-repo projects get a repo list table displayed to the user. User stories section updated with multi-repo format (目标仓库 field), rules for single-repo-per-story constraint, and docs repo assignment guidance. Updated checklist with multi-repo verification items. Re-numbered all steps (头脑风暴→第二步, 初步澄清→第三步, etc.).
-- Files changed:
-  - skills/prd/SKILL.md - Added multi-repo detection step, multi-repo story format, updated checklist
-- **Learnings for future iterations:**
-  - SKILL.md is pure documentation — no TypeScript changes needed, but still verify both builds pass
-  - The multi-repo detection pattern (read config.json, check repositories) is consistent across /prd and /ralph skills
-  - Step numbering shift is necessary when inserting a new early step — all subsequent steps must be renumbered
-  - docs repos use "文档格式规范检查通过" instead of "类型检查通过" as acceptance criteria — consistent with US-009's SKILL.md
----
-
-## 2026-03-03 - US-011 (multi-repo-support)
-- What was implemented: Created `skills/start/SKILL.md` — the `/ralph-start` skill with multi-repo support. Includes multi-repo detection workflow, interactive AskUserQuestion prompts for selecting start mode (all repos, specific repo, specific type), parameter passthrough for `--repo` and `--type`, pre-flight checks, and single-repo fallback behavior.
-- Files changed:
-  - skills/start/SKILL.md (new) - Full /ralph-start skill with multi-repo awareness
-- **Learnings for future iterations:**
-  - SKILL.md is pure documentation/instruction — no TypeScript changes needed, only verify both builds still pass
-  - The skill delegates to `ralph run-all` for multi-repo orchestration, keeping the skill focused on user interaction flow
-  - AskUserQuestion pattern with follow-up questions (first select mode, then select repo) provides good UX for multi-step decisions
-  - Single-repo projects skip all interaction and directly start, maintaining backward compatibility
----
-
-## 2026-03-03 - US-012 (multi-repo-support)
-- What was implemented: Dashboard multi-repo overview cards. Added `getActiveProjectRepos()` to config.ts returning repo info (name, path, type, prdPath, pidPath). Created `/api/repos` API route that reads each repo's prd.json for story progress and PID file for running status. Created `RepoOverviewCards` client component with per-repo cards showing: name, type badge with icon, running status badge, story progress (X/Y), and progress bar. Integrated into dashboard page above Kanban Board. Single-repo projects show nothing (component returns null when no repos configured).
-- Files changed:
-  - dashboard/src/lib/config.ts - Added RepoInfo interface, getActiveProjectRepos() function
-  - dashboard/src/app/api/repos/route.ts (new) - GET endpoint returning RepoStatus[] with story counts and running state
-  - dashboard/src/components/repo-overview-cards.tsx (new) - Client component with polling (5s interval), type-specific icons/colors, status badges
-  - dashboard/src/app/(dashboard)/dashboard/page.tsx - Imported and placed RepoOverviewCards above Kanban Board
-- **Learnings for future iterations:**
-  - RepoOverviewCards uses client-side polling (setInterval 5s) for status updates — will be improved by US-014 WebSocket integration
-  - PID file existence check is a simple proxy for "running" status — the file may persist after crash
-  - Type-specific icon mapping (FileText for docs, Server for backend, Globe for frontend) provides visual differentiation
-  - The component self-hides when no repos are configured (returns null), maintaining backward compatibility
-  - API route imports type from `@/lib/types` for PRD interface — consistent with other API routes
----
-
-## 2026-03-03 - US-013 (multi-repo-support)
-- What was implemented: Multi-repo story switching in Dashboard Stories page. Updated prd-file.ts to support repo-specific PRD paths via optional `repoName` parameter. Updated all PRD API routes (GET/PATCH /api/prd, CRUD /api/prd/stories, reorder) to accept `?repo=` query param for repo-specific PRD operations. Added Tabs-based repo selector to Stories page that detects multi-repo config, lists repos with prd.json, and switches between repo-specific story lists.
-- Files changed:
-  - dashboard/src/lib/prd-file.ts - Added `repoName` param to readPrd/writePrd/getPrdPath, imports getActiveProjectRepos
-  - dashboard/src/app/api/prd/route.ts - Added `?repo=` query param support to GET and PATCH
-  - dashboard/src/app/api/prd/stories/route.ts - Added `?repo=` query param support to GET and POST
-  - dashboard/src/app/api/prd/stories/[id]/route.ts - Added `?repo=` query param support to GET, PUT, DELETE
-  - dashboard/src/app/api/prd/stories/reorder/route.ts - Added `?repo=` query param support to PATCH
-  - dashboard/src/app/(dashboard)/stories/page.tsx - Added Tabs repo selector, repo-specific PRD state, repo-aware API calls
-  - scripts/ralph/prd.json - Marked US-013 passes: true
-- **Learnings for future iterations:**
-  - The `?repo=` query param pattern is cleaner than creating separate API routes — reuses all existing CRUD logic with one extra param
-  - prd-file.ts `getPrdPath(repoName?)` resolves repo path via getActiveProjectRepos() — keeps path resolution centralized
-  - Stories page uses local `repoPrd` state for multi-repo mode instead of the global store to avoid affecting other pages
-  - RepoStatus type from /api/repos/route is reused in Stories page to identify repos with prd.json (totalStories > 0)
-  - Tabs component from shadcn/ui uses `variant="line"` for a clean underline style, with type-specific icons per tab
----
-
-## 2026-03-03 - US-014 (multi-repo-support)
-- What was implemented: Upgraded `setupFileWatcher` in `dashboard/server/ws.ts` to support multi-repo file watching. When the active project has `repositories` configured, the watcher monitors all repos' `prd.json`, `progress.txt`, and `.ralph-pid` files. Broadcast events now include a `repo` field identifying which repository triggered the change. Single-repo projects retain unchanged behavior.
-- Files changed:
-  - dashboard/server/ws.ts - Imported `getActiveProjectRepos`, refactored `setupFileWatcher` with multi-repo branch (fileEventMap for path-to-event/repo mapping), added `.ralph-pid` watching, `repo` field in broadcast payloads
-- **Learnings for future iterations:**
-  - `fileEventMap` (Record<resolvedPath, {eventType, repo?}>) is cleaner than multiple path variables for mapping files to events
-  - `path.dirname(repo.prdPath)` derives the scripts/ralph dir from prdPath — avoids needing a separate scriptsDir field on RepoInfo
-  - `.ralph-pid` file watching enables real-time running status updates for multi-repo dashboard cards (complements US-012 polling)
-  - Multi-repo watcher logs repo names for easier debugging: `[WS] Multi-repo mode: watching files for repos: docs, backend, frontend`
----
-
-## 2026-03-03 - US-015 (multi-repo-support)
-- What was implemented: Updated `scripts/ralph/prd.json.example` from single-repo format to multi-repo format with `repositories` config and `repo` field on each story
-- Files changed:
-  - scripts/ralph/prd.json.example - Rewrote example with docs/backend/frontend repos, priority ordering, and repo-specific stories
-- Key content:
-  - Added `repositories` field with three repos: docs (priority 0), backend (priority 1), frontend (priority 1)
-  - Each story now has a `repo` field pointing to a repository key
-  - Example demonstrates contract-first workflow: docs repo stories run first, then backend/frontend in parallel
-  - All existing story fields preserved (id, title, description, acceptanceCriteria, priority, passes, notes)
-- **Learnings for future iterations:**
-  - prd.json.example is a documentation file — no TypeScript changes needed, but still verify both builds pass
-  - The example demonstrates the recommended contract-first pattern: docs repo at priority 0, implementation repos at priority 1
-  - `repo` field on stories is the key addition for multi-repo PRDs — maps story to a specific repository
+  - Grep for imports (`from.*component-name`) is reliable for confirming whether a component is referenced
+  - The REST API stdin endpoint in ralph.ts still exists (`POST /api/ralph/stdin`) — not removed since it's a valid programmatic API
+  - Pre-existing TS errors in server/routes/archives.ts and server/routes/projects.ts are Express v5 `string | string[]` param type issues — not related to this work
 ---

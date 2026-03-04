@@ -252,12 +252,12 @@ export function StoryFlow({
         targetHandle,
         animated: !readOnly && isRunningEdge,
         style: {
-          stroke: isRunningEdge ? "#06B6D4" : "#3f3f46",
-          strokeWidth: 2,
+          stroke: isRunningEdge ? "#C15F3C" : "#E0DDD5",
+          strokeWidth: 1.5,
         },
         markerEnd: {
           type: MarkerType.ArrowClosed,
-          color: isRunningEdge ? "#06B6D4" : "#3f3f46",
+          color: isRunningEdge ? "#C15F3C" : "#E0DDD5",
         },
       });
     });
@@ -291,10 +291,10 @@ export function StoryFlow({
         sourceHandle,
         targetHandle,
         animated: false,
-        style: { stroke: "#3f3f46", strokeWidth: 2 },
+        style: { stroke: "#E0DDD5", strokeWidth: 2 },
         markerEnd: {
           type: MarkerType.ArrowClosed,
-          color: "#3f3f46",
+          color: "#E0DDD5",
         },
       });
     }
@@ -353,7 +353,7 @@ export function StoryFlow({
           variant={BackgroundVariant.Dots}
           gap={20}
           size={1}
-          color="#27272a"
+          color="#E0DDD5"
         />
 
       </ReactFlow>
@@ -362,6 +362,7 @@ export function StoryFlow({
         open={panelOpen}
         onOpenChange={setPanelOpen}
         readOnly={readOnly}
+        branchName={branchName}
       />
     </>
   );

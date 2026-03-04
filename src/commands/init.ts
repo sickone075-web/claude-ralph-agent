@@ -633,7 +633,7 @@ function stepCompletion(config: RalphConfig): void {
   }
   console.log('');
   console.log(`  配置已保存到 ${DIM(getConfigPath())}`);
-  console.log(`  执行 ${BRAND('ralph start')} 启动 Web 控制台`);
+  console.log(`  执行 ${BRAND('ralph dashboard')} 启动 Web 控制台`);
   console.log('');
 }
 

@@ -34,7 +34,7 @@ function RunningTimer({ startedAt }: { startedAt: string }) {
   }, [startedAt]);
 
   return (
-    <span className="text-xs text-cyan-400 tabular-nums">
+    <span className="font-mono text-[10px] tabular-nums text-[#C15F3C]">
       {formatDuration(elapsed)}
     </span>
   );
@@ -42,27 +42,42 @@ function RunningTimer({ startedAt }: { startedAt: string }) {
 
 const statusConfig: Record<
   StoryStatus,
-  { borderClass: string; icon: React.ReactNode; label: string }
+  {
+    cardClass: string;
+    iconBg: string;
+    icon: React.ReactNode;
+    idColor: string;
+    titleColor: string;
+  }
 > = {
   pending: {
-    borderClass: "border-zinc-800",
-    icon: <Circle className="h-4 w-4 text-zinc-500" />,
-    label: "待处理",
+    cardClass: "border border-[#E0DDD5] shadow-[0_1px_4px_rgba(0,0,0,0.02)]",
+    iconBg: "bg-[#F5F5F0]",
+    icon: <Circle className="h-3 w-3 text-[#B1ADA1]" fill="#B1ADA1" />,
+    idColor: "text-[#B1ADA1]",
+    titleColor: "text-[#B1ADA1]",
   },
   running: {
-    borderClass: "border-cyan-500 shadow-[0_0_12px_rgba(6,182,212,0.3)]",
-    icon: <Loader2 className="h-4 w-4 animate-spin text-cyan-400" />,
-    label: "执行中",
+    cardClass:
+      "border-[1.5px] border-[#C15F3C] shadow-[0_0_16px_2px_rgba(193,95,60,0.15)]",
+    iconBg: "bg-[#FEF0E8]",
+    icon: <Loader2 className="h-3.5 w-3.5 animate-spin text-[#C15F3C]" />,
+    idColor: "text-[#C15F3C]",
+    titleColor: "text-[#1A1A18]",
   },
   completed: {
-    borderClass: "border-green-500",
-    icon: <Check className="h-4 w-4 text-green-400" />,
-    label: "已完成",
+    cardClass: "border-[1.5px] border-[#22C55E33] shadow-[0_2px_12px_rgba(0,0,0,0.03)]",
+    iconBg: "bg-[#ECFDF5]",
+    icon: <Check className="h-3.5 w-3.5 text-[#22C55E]" />,
+    idColor: "text-[#22C55E]",
+    titleColor: "text-[#1A1A18]",
   },
   failed: {
-    borderClass: "border-red-500",
-    icon: <X className="h-4 w-4 text-red-400" />,
-    label: "失败",
+    cardClass: "border-[1.5px] border-[#EF444433] shadow-[0_2px_12px_rgba(0,0,0,0.03)]",
+    iconBg: "bg-[#FEF2F2]",
+    icon: <X className="h-3.5 w-3.5 text-[#EF4444]" />,
+    idColor: "text-[#EF4444]",
+    titleColor: "text-[#1A1A18]",
   },
 };
 
@@ -79,40 +94,54 @@ function StoryNodeComponent({ data }: NodeProps & { data: StoryNodeData }) {
 
   return (
     <div
-      className={`w-[280px] rounded-lg border bg-zinc-900 p-3 transition-colors ${config.borderClass} ${
+      className={`w-[280px] rounded-xl bg-white p-3 transition-all ${config.cardClass} ${
         status === "running" ? "animate-pulse-glow" : ""
       }`}
     >
-      {/* Connection handles - all directions */}
-      <Handle type="target" position={Position.Top} id="top" className="!h-2 !w-2 !border-zinc-700 !bg-cyan-500" />
-      <Handle type="target" position={Position.Left} id="left-target" className="!h-2 !w-2 !border-zinc-700 !bg-cyan-500" />
-      <Handle type="target" position={Position.Right} id="right-target" className="!h-2 !w-2 !border-zinc-700 !bg-cyan-500" />
+      {/* Connection handles - target */}
+      <Handle type="target" position={Position.Top} id="top" className="!h-2 !w-2 !border-[#E0DDD5] !bg-[#C15F3C]" />
+      <Handle type="target" position={Position.Left} id="left-target" className="!h-2 !w-2 !border-[#E0DDD5] !bg-[#C15F3C]" />
+      <Handle type="target" position={Position.Right} id="right-target" className="!h-2 !w-2 !border-[#E0DDD5] !bg-[#C15F3C]" />
 
-      {/* Header: ID + status icon */}
-      <div className="mb-1.5 flex items-center justify-between">
-        <span className="font-mono text-xs font-semibold text-cyan-400">
-          {storyId}
-        </span>
-        <div className="flex items-center gap-1.5">
-          {status === "running" && startedAt && (
-            <RunningTimer startedAt={startedAt} />
-          )}
-          {completedDuration && (
-            <span className="text-xs text-green-400 tabular-nums">
-              {completedDuration}
-            </span>
-          )}
+      <div className="flex items-start gap-2.5">
+        {/* Status icon circle */}
+        <div
+          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${config.iconBg}`}
+        >
           {config.icon}
+        </div>
+
+        <div className="min-w-0 flex-1">
+          {/* Header: ID + timer/duration */}
+          <div className="mb-1 flex items-center justify-between">
+            <span
+              className={`font-mono text-[10px] font-semibold ${config.idColor}`}
+            >
+              {storyId}
+            </span>
+            <div className="flex items-center gap-1.5">
+              {status === "running" && startedAt && (
+                <RunningTimer startedAt={startedAt} />
+              )}
+              {completedDuration && (
+                <span className="font-mono text-[10px] tabular-nums text-[#22C55E]">
+                  {completedDuration}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Title */}
+          <p className={`text-[13px] leading-snug ${config.titleColor}`}>
+            {title}
+          </p>
         </div>
       </div>
 
-      {/* Title */}
-      <p className="text-sm leading-snug text-zinc-200">{title}</p>
-
-      {/* Source handles - all directions */}
-      <Handle type="source" position={Position.Bottom} id="bottom" className="!h-2 !w-2 !border-zinc-700 !bg-cyan-500" />
-      <Handle type="source" position={Position.Left} id="left-source" className="!h-2 !w-2 !border-zinc-700 !bg-cyan-500" />
-      <Handle type="source" position={Position.Right} id="right-source" className="!h-2 !w-2 !border-zinc-700 !bg-cyan-500" />
+      {/* Source handles */}
+      <Handle type="source" position={Position.Bottom} id="bottom" className="!h-2 !w-2 !border-[#E0DDD5] !bg-[#C15F3C]" />
+      <Handle type="source" position={Position.Left} id="left-source" className="!h-2 !w-2 !border-[#E0DDD5] !bg-[#C15F3C]" />
+      <Handle type="source" position={Position.Right} id="right-source" className="!h-2 !w-2 !border-[#E0DDD5] !bg-[#C15F3C]" />
     </div>
   );
 }

@@ -1,117 +1,183 @@
-import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import {
-  LayoutDashboard,
-  BookOpen,
-  Terminal,
-  ScrollText,
-  Archive,
-  Settings,
-  Menu,
-  X,
-} from "lucide-react";
-import { Separator } from "@/components/ui/separator";
-import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { LayoutDashboard, Settings } from "lucide-react";
 import { RalphStatusIndicator } from "./ralph-status-indicator";
-import { ProjectSwitcher } from "./project-switcher";
 
 const navItems = [
   { href: "/dashboard", label: "仪表盘", icon: LayoutDashboard },
-  { href: "/stories", label: "用户故事", icon: BookOpen },
-  { href: "/terminal", label: "终端", icon: Terminal },
-  { href: "/logs", label: "日志", icon: ScrollText },
-  { href: "/archives", label: "归档", icon: Archive },
 ];
 
-function NavContent() {
+export function Sidebar() {
   const { pathname } = useLocation();
 
   return (
-    <div className="flex h-full flex-col">
-      {/* Logo + project name */}
-      <div className="px-4 py-5">
-        <h1 className="text-lg font-bold tracking-tight bg-gradient-to-r from-cyan-500 to-blue-500 bg-clip-text text-transparent">Ralph</h1>
-        <p className="text-xs text-zinc-400 mt-0.5">项目控制台</p>
-      </div>
-
-      {/* Project Switcher */}
-      <ProjectSwitcher />
-
-      {/* Navigation */}
-      <nav className="flex-1 px-2 space-y-1">
-        {navItems.map((item) => {
-          const isActive = pathname === item.href;
-          return (
-            <Link
-              key={item.href}
-              to={item.href}
-              className={`relative flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors duration-200 ${
-                isActive
-                  ? "bg-zinc-800/50 text-white"
-                  : "text-zinc-400 hover:bg-zinc-800/50 hover:text-white"
-              }`}
-            >
-              {isActive && (
-                <span className="absolute left-0 top-1 bottom-1 w-0.5 rounded-full bg-gradient-to-b from-cyan-500 to-blue-500" />
-              )}
-              <item.icon className="h-4 w-4" />
-              {item.label}
-            </Link>
-          );
-        })}
-
-        <Separator className="my-3 bg-zinc-800" />
-
-        <Link
-          to="/settings"
-          className={`relative flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors duration-200 ${
-            pathname === "/settings"
-              ? "bg-zinc-800/50 text-white"
-              : "text-zinc-400 hover:bg-zinc-800/50 hover:text-white"
-          }`}
-        >
-          {pathname === "/settings" && (
-            <span className="absolute left-0 top-1 bottom-1 w-0.5 rounded-full bg-gradient-to-b from-cyan-500 to-blue-500" />
-          )}
-          <Settings className="h-4 w-4" />
-          设置
-        </Link>
-      </nav>
-
-      {/* Status indicator at bottom */}
-      <div className="px-4 py-4 border-t border-transparent" style={{ borderImage: 'linear-gradient(to right, #06B6D4, transparent) 1' }}>
-        <RalphStatusIndicator />
-      </div>
-    </div>
-  );
-}
-
-export function Sidebar() {
-  const [open, setOpen] = useState(false);
-
-  return (
     <>
-      {/* Desktop sidebar */}
-      <aside className="hidden md:flex w-60 flex-col bg-zinc-950 border-r border-zinc-800 shrink-0">
-        <NavContent />
+      {/* Desktop sidebar - 64px icon rail */}
+      <aside
+        className="hidden md:flex w-16 flex-col items-center shrink-0"
+        style={{
+          backgroundColor: "#EDEDEA",
+          borderRight: "1px solid #E0DDD5",
+        }}
+      >
+        {/* Logo */}
+        <div className="mt-4 mb-6">
+          <div
+            className="flex items-center justify-center"
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 10,
+              backgroundColor: "#C15F3C",
+            }}
+          >
+            <span
+              style={{
+                color: "#FFFFFF",
+                fontFamily: "'Cormorant Garamond', serif",
+                fontSize: 20,
+                fontWeight: 700,
+                lineHeight: 1,
+              }}
+            >
+              R
+            </span>
+          </div>
+        </div>
+
+        {/* Separator */}
+        <div
+          className="w-8 mb-4"
+          style={{ height: 1, backgroundColor: "#E0DDD5" }}
+        />
+
+        {/* Nav icons */}
+        <nav className="flex-1 flex flex-col items-center gap-2">
+          {navItems.map((item) => {
+            const isActive =
+              pathname === item.href || pathname.startsWith(item.href + "/");
+            return (
+              <Link
+                key={item.href}
+                to={item.href}
+                title={item.label}
+                className="flex items-center justify-center transition-colors duration-200"
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 12,
+                  backgroundColor: isActive ? "#C15F3C" : "transparent",
+                  color: isActive ? "#FFFFFF" : "#999999",
+                }}
+                onMouseEnter={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.backgroundColor = "#ECEAE5";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.backgroundColor = "transparent";
+                  }
+                }}
+              >
+                <item.icon className="h-5 w-5" />
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* Bottom section: Settings + Status */}
+        <div className="flex flex-col items-center gap-3 mb-4">
+          <Link
+            to="/settings"
+            title="设置"
+            className="flex items-center justify-center transition-colors duration-200"
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 12,
+              backgroundColor:
+                pathname === "/settings" ? "#C15F3C" : "transparent",
+              color: pathname === "/settings" ? "#FFFFFF" : "#999999",
+            }}
+            onMouseEnter={(e) => {
+              if (pathname !== "/settings") {
+                e.currentTarget.style.backgroundColor = "#ECEAE5";
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (pathname !== "/settings") {
+                e.currentTarget.style.backgroundColor = "transparent";
+              }
+            }}
+          >
+            <Settings className="h-5 w-5" />
+          </Link>
+
+          {/* Ralph status dot */}
+          <RalphStatusIndicator compact />
+        </div>
       </aside>
 
-      {/* Mobile hamburger */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-50 flex items-center h-14 px-4 bg-zinc-950 border-b border-zinc-800">
-        <Sheet open={open} onOpenChange={setOpen}>
-          <SheetTrigger asChild>
-            <Button variant="ghost" size="icon" className="text-zinc-400">
-              <Menu className="h-5 w-5" />
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="left" className="w-60 p-0 bg-zinc-950 border-zinc-800">
-            <div onClick={() => setOpen(false)}>
-              <NavContent />
-            </div>
-          </SheetContent>
-        </Sheet>
-        <h1 className="ml-3 text-sm font-bold bg-gradient-to-r from-cyan-500 to-blue-500 bg-clip-text text-transparent">Ralph</h1>
+      {/* Mobile top bar */}
+      <div
+        className="md:hidden fixed top-0 left-0 right-0 z-50 flex items-center h-14 px-4"
+        style={{
+          backgroundColor: "#EDEDEA",
+          borderBottom: "1px solid #E0DDD5",
+        }}
+      >
+        <div
+          className="flex items-center justify-center"
+          style={{
+            width: 32,
+            height: 32,
+            borderRadius: 8,
+            backgroundColor: "#C15F3C",
+          }}
+        >
+          <span
+            style={{
+              color: "#FFFFFF",
+              fontFamily: "'Cormorant Garamond', serif",
+              fontSize: 16,
+              fontWeight: 700,
+              lineHeight: 1,
+            }}
+          >
+            R
+          </span>
+        </div>
+        <div className="flex-1" />
+        <div className="flex items-center gap-2">
+          <Link
+            to="/dashboard"
+            className="flex items-center justify-center"
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: 8,
+              backgroundColor:
+                pathname === "/dashboard" ? "#C15F3C" : "transparent",
+              color: pathname === "/dashboard" ? "#FFFFFF" : "#999999",
+            }}
+          >
+            <LayoutDashboard className="h-4.5 w-4.5" />
+          </Link>
+          <Link
+            to="/settings"
+            className="flex items-center justify-center"
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: 8,
+              backgroundColor:
+                pathname === "/settings" ? "#C15F3C" : "transparent",
+              color: pathname === "/settings" ? "#FFFFFF" : "#999999",
+            }}
+          >
+            <Settings className="h-4.5 w-4.5" />
+          </Link>
+        </div>
       </div>
     </>
   );

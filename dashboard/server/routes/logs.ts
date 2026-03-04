@@ -5,8 +5,15 @@ import { simpleGit } from "simple-git";
 import { getActiveProjectPaths } from "../../src/lib/config";
 import { parseProgressLogData } from "../../src/lib/progress-parser";
 import type { GitCommit, ProgressLogData } from "../../src/lib/types";
+import { getAllLogs, getLogsByStoryId } from "../log-cache";
 
 export const logsRouter = Router();
+
+// GET /api/logs — return all execution logs (not filtered by story)
+logsRouter.get("/", (_req: Request, res: Response) => {
+  const data = getAllLogs();
+  res.json({ data, error: null });
+});
 
 // GET /api/logs/progress
 logsRouter.get("/progress", (_req: Request, res: Response) => {
@@ -53,4 +60,12 @@ logsRouter.get("/git", async (_req: Request, res: Response) => {
   } catch {
     res.status(500).json({ data: null, error: "Failed to read git history" });
   }
+});
+
+// GET /api/logs/:storyId — return execution logs for a specific story
+// NOTE: This must come AFTER /progress and /git to avoid matching those paths
+logsRouter.get("/:storyId", (req: Request, res: Response) => {
+  const storyId = req.params.storyId as string;
+  const data = getLogsByStoryId(storyId);
+  res.json({ data, error: null });
 });
