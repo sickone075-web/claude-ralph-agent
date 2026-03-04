@@ -4,18 +4,15 @@
     "name": "sickone075-web"
   },
   "metadata": {
-    "description": "Ralph 自主 agent 系统中文优化版 - 含头脑风暴、交互式澄清和强制需求讨论环节",
-    "version": "1.1.0"
+    "description": "Ralph 自主 agent 系统 — PRD 生成、任务转换、循环控制、项目初始化"
   },
   "plugins": [
     {
       "name": "claude-ralph-agent",
       "source": "./",
       "description": "Ralph 自主 agent 系统技能集 — PRD 生成、任务转换、循环控制、项目初始化",
-      "version": "2.0.0",
-      "keywords": ["ralph", "prd", "中文", "brainstorming", "agent"],
-      "category": "productivity",
-      "skills": "../skills/"
+      "keywords": ["ralph", "prd", "agent"],
+      "category": "productivity"
     }
   ]
 }
