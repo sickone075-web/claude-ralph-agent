@@ -420,7 +420,7 @@ function stepPluginGuide(): void {
 
   // Try auto-register via claude CLI
   let installed = false;
-  const pluginName = 'ralph-zh-skills';
+  const pluginName = 'claude-ralph-agent';
 
   // Check if already registered
   try {

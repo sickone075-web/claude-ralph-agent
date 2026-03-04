@@ -1,5 +1,5 @@
 {
-  "name": "ralph-zh-marketplace",
+  "name": "claude-ralph-agent",
   "owner": {
     "name": "sickone075-web"
   },
@@ -9,10 +9,10 @@
   },
   "plugins": [
     {
-      "name": "ralph-zh-skills",
+      "name": "claude-ralph-agent",
       "source": "./",
-      "description": "中文 PRD 生成和转换技能，支持 AskUserQuestion 交互、brainstorming skill 调用和多轮需求讨论",
-      "version": "1.1.0",
+      "description": "Ralph 自主 agent 系统技能集 — PRD 生成、任务转换、循环控制、项目初始化",
+      "version": "2.0.0",
       "keywords": ["ralph", "prd", "中文", "brainstorming", "agent"],
       "category": "productivity",
       "skills": "../skills/"
