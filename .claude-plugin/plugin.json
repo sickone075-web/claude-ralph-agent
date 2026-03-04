@@ -1,10 +1,9 @@
 {
   "name": "claude-ralph-agent",
-  "version": "2.0.0",
   "description": "Ralph 自主 agent 系统技能集 — PRD 生成、任务转换、循环控制、项目初始化",
   "author": {
     "name": "sickone075-web"
   },
-  "skills": "../skills/",
-  "keywords": ["ralph", "prd", "init", "automation", "agent", "中文"]
+  "skills": "./skills",
+  "keywords": ["ralph", "prd", "init", "automation", "agent"]
 }
