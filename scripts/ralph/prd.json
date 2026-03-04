@@ -134,7 +134,7 @@
         "使用 dev-browser skill 在浏览器中验证"
       ],
       "priority": 7,
-      "passes": false,
+      "passes": true,
       "notes": "参照 design-system/MASTER.md 的配色和字体规范。参考 US-004 实现的后端 API。使用 fetch 请求数据，不需要 WebSocket。"
     },
     {

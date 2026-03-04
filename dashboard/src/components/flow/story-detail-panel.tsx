@@ -24,6 +24,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { StoryLogTab } from "./story-log-tab";
+import { StoryGitTab } from "./story-git-tab";
 
 // --- Helpers ---
 
@@ -458,14 +459,9 @@ export function StoryDetailPanel({
             <StoryLogTab story={story} />
           </TabsContent>
 
-          {/* Git Tab - Placeholder */}
-          <TabsContent value="git" className="px-6 py-5">
-            <div className="flex flex-col items-center justify-center py-16">
-              <GitCommitHorizontal className="h-10 w-10 mb-3" style={{ color: "#B1ADA1" }} />
-              <p className="text-sm" style={{ color: "#B1ADA1" }}>
-                Git 提交记录将在后续版本中实现
-              </p>
-            </div>
+          {/* Git Tab */}
+          <TabsContent value="git" className="px-6 py-5 flex-1 overflow-y-auto">
+            <StoryGitTab story={story} />
           </TabsContent>
 
           {/* Timeline Tab - Placeholder */}

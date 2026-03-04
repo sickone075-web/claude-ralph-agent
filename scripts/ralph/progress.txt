@@ -107,6 +107,23 @@ Started: Wed Mar  4 01:15:11     2026
   - Log color coding uses regex patterns on raw log text to identify line types (commands, warnings, story references, code additions)
 ---
 
+## 2026-03-04 - US-007
+- Created `dashboard/src/components/flow/story-git-tab.tsx` — standalone Git commits tab component
+- Fetches commits from `GET /api/git/commits?storyId=xxx` (implemented in US-004)
+- Each commit shows: short hash (JetBrains Mono terracotta #C15F3C), message (Inter 13px #1A1A18), author (#666666), relative time (#999999)
+- Commits listed in reverse chronological order with #E0DDD5 separator lines
+- Empty state with centered icon and hint text (#B1ADA1)
+- Loading state with spinning Loader2 icon
+- Updated story-detail-panel.tsx: replaced Git tab placeholder with StoryGitTab component
+- TypeScript check passes (only pre-existing server errors remain)
+- Files changed: `dashboard/src/components/flow/story-git-tab.tsx` (new), `dashboard/src/components/flow/story-detail-panel.tsx`
+- **Learnings for future iterations:**
+  - Tab components follow a consistent pattern: props with `{ story: Story }`, fetch data on mount with `useEffect`, loading/empty/data states
+  - The `GitCommit` type is already defined in `lib/types.ts` — reuse it
+  - `formatRelativeTime` is a local helper; if more tabs need it, consider extracting to a shared util
+  - Git commits API returns data in `{ data: GitCommit[] }` wrapper matching the `ApiResponse<T>` pattern
+---
+
 ## 2026-03-04 - US-005
 - Implemented enhanced Story detail drawer component (story-detail-panel.tsx)
 - Full rewrite: Sheet-based right-side drawer, 560px width, white bg with warm shadow
