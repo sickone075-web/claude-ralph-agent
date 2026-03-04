@@ -230,3 +230,29 @@
 .animate-pulse-glow {
   animation: pulse-glow 2s ease-in-out infinite;
 }
+
+/* Claude-themed tab triggers for detail drawer */
+.tab-trigger-claude {
+  color: #B1ADA1;
+  position: relative;
+}
+
+.tab-trigger-claude:hover {
+  color: #666666;
+}
+
+.tab-trigger-claude[data-state="active"] {
+  color: #C15F3C;
+  background: transparent;
+}
+
+.tab-trigger-claude[data-state="active"]::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: #C15F3C;
+  opacity: 1;
+}

@@ -15,6 +15,7 @@ Started: Wed Mar  4 01:15:11     2026
 - Server log cache module is at `dashboard/server/log-cache.ts` — tracks current Story ID and caches logs by story
 - Express v5 `req.params` returns `string | string[]` — use `as string` cast for single params
 - WebSocket `ralph:output` events now include `storyId` field (string | null)
+- Git-specific API routes are under `/api/git/*` in `dashboard/server/routes/git.ts`
 
 ---
 
@@ -69,4 +70,35 @@ Started: Wed Mar  4 01:15:11     2026
   - Route order matters: specific routes (`/progress`, `/git`) must come before param routes (`/:storyId`)
   - The `onEvent` callback in index.ts is the single point to intercept all Ralph process events before broadcasting
   - Log cache is in-memory only — clears on server restart (by design)
+---
+
+## 2026-03-04 - US-004
+- Created `dashboard/server/routes/git.ts` with `GET /api/git/commits?storyId=US-XXX` endpoint
+- Uses simple-git `git.log({ "--grep": storyId })` to filter commits by Story ID in commit message
+- Returns array of `{ hash, message, author, date }` objects; empty array when no matches
+- Registered gitRouter at `/api/git` in `dashboard/server/index.ts`
+- TypeScript check passes (only pre-existing server errors remain)
+- Files changed: `dashboard/server/routes/git.ts` (new), `dashboard/server/index.ts`
+- **Learnings for future iterations:**
+  - simple-git `log()` accepts `"--grep"` option to filter commits by message pattern
+  - The existing `/api/logs/git` endpoint in logs.ts fetches general git history; the new `/api/git/commits` is for story-specific filtering
+  - Git routes are now separate from log routes — `/api/git/*` vs `/api/logs/*`
+---
+
+## 2026-03-04 - US-005
+- Implemented enhanced Story detail drawer component (story-detail-panel.tsx)
+- Full rewrite: Sheet-based right-side drawer, 560px width, white bg with warm shadow
+- Header: Story ID (JetBrains Mono 13px bold terracotta), status badge (pill style), close button, title (Cormorant Garamond 20px 600)
+- 4 tabs: 详情, 日志, Git, 时间线 — last 3 with placeholder content for future stories
+- Claude-themed tab styling via `.tab-trigger-claude` CSS class: active #C15F3C with 2px bottom border, inactive #B1ADA1
+- Details tab: description, acceptance criteria (checkbox style with green/unchecked states), priority badge, notes
+- Edit mode: toggle button, inline editing for title/description/notes/criteria, save via PUT /api/prd/stories/:id
+- story-flow.tsx already wired with onNodeClick → setSelectedStory → setPanelOpen
+- Added tab-trigger-claude CSS rules to globals.css
+- Files changed: `dashboard/src/components/flow/story-detail-panel.tsx`, `dashboard/src/globals.css`
+- **Learnings for future iterations:**
+  - The Sheet component from shadcn/ui accepts `showCloseButton={false}` to suppress default close button (custom close button used instead)
+  - Tab styling override uses `variant="line"` on TabsList plus custom CSS class `.tab-trigger-claude` for Claude theme colors
+  - The `after` pseudo-element from the base Tabs component provides underline on active state — custom CSS overrides its color to terracotta
+  - Edit state uses PUT /api/prd/stories/:id endpoint (not PATCH /api/prd) — this endpoint exists in prd.ts routes
 ---
