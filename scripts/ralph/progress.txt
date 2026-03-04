@@ -227,3 +227,21 @@ Started: Wed Mar  4 01:15:11     2026
   - All hardcoded zinc/cyan colors in flow nodes are now replaced — no more dark theme remnants in flow components
   - Handle styling uses `!border-[#E0DDD5] !bg-[#C15F3C]` pattern for React Flow handles
 ---
+
+## 2026-03-04 - US-012
+- Cleaned up all dead code from the dashboard restructure
+- **Deleted unused component files:** kanban-board.tsx, kanban-card.tsx, story-edit-dialog.tsx, story-sheet.tsx, project-switcher.tsx
+- **Removed `@hello-pangea/dnd` dependency** from package.json (only used by deleted kanban components)
+- **Removed `ralph:stdin` WebSocket handler** from server/index.ts (terminal page no longer exists)
+- **Removed unused `sendStdin` import** from server/index.ts
+- **store.ts was already clean** — no terminal-related state fields found
+- **WebSocket hooks (use-websocket.ts, websocket-provider.tsx) were already clean** — no terminal-specific events
+- Ran `npm install` to update lock file
+- TypeScript check passes (only pre-existing server errors in archives.ts and projects.ts remain)
+- Vite build passes
+- Files changed: `dashboard/src/components/kanban-board.tsx` (deleted), `dashboard/src/components/kanban-card.tsx` (deleted), `dashboard/src/components/story-edit-dialog.tsx` (deleted), `dashboard/src/components/story-sheet.tsx` (deleted), `dashboard/src/components/project-switcher.tsx` (deleted), `dashboard/package.json`, `dashboard/package-lock.json`, `dashboard/server/index.ts`
+- **Learnings for future iterations:**
+  - Grep for imports (`from.*component-name`) is reliable for confirming whether a component is referenced
+  - The REST API stdin endpoint in ralph.ts still exists (`POST /api/ralph/stdin`) — not removed since it's a valid programmatic API
+  - Pre-existing TS errors in server/routes/archives.ts and server/routes/projects.ts are Express v5 `string | string[]` param type issues — not related to this work
+---

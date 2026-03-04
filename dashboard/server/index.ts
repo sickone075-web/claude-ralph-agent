@@ -3,7 +3,7 @@ import { createServer } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { watch, type FSWatcher } from "chokidar";
 import path from "path";
-import { onEvent, sendStdin, getPidFilePath, detectRunningFromPid } from "../src/lib/ralph-process";
+import { onEvent, getPidFilePath, detectRunningFromPid } from "../src/lib/ralph-process";
 import { getActiveProjectPaths, getActiveProjectRepos } from "../src/lib/config";
 import { initLogCache, addLogLine, getCurrentStoryId, setCurrentStoryId, detectStoryIdFromOutput, clearLogCache } from "./log-cache";
 
@@ -236,28 +236,6 @@ setupFileWatcher();
 // Handle incoming WebSocket connections
 wss.on("connection", (ws: WebSocket) => {
   console.log("[WS] Client connected");
-
-  ws.on("message", (raw: Buffer) => {
-    try {
-      const message = JSON.parse(raw.toString());
-
-      if (message.type === "ralph:stdin" && typeof message.payload?.input === "string") {
-        try {
-          sendStdin(message.payload.input);
-        } catch (err) {
-          ws.send(
-            JSON.stringify({
-              type: "error",
-              payload: { message: (err as Error).message },
-              timestamp: new Date().toISOString(),
-            })
-          );
-        }
-      }
-    } catch {
-      // Ignore malformed messages
-    }
-  });
 
   ws.on("close", () => {
     console.log("[WS] Client disconnected");

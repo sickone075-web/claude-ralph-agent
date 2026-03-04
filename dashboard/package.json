@@ -10,7 +10,6 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@hello-pangea/dnd": "^18.0.1",
     "@xyflow/react": "^12.10.1",
     "chokidar": "^5.0.0",
     "class-variance-authority": "^0.7.1",
