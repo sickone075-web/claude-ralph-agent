@@ -28,8 +28,9 @@
     "dashboard/dist/",
     "scripts/ralph/ralph.sh",
     "scripts/ralph/CLAUDE.md",
-    "scripts/ralph/prompt.md",
-    "scripts/ralph/prd.json.example"
+    "scripts/ralph/prd.json.example",
+    "tests/",
+    "CLAUDE.md"
   ],
   "dependencies": {
     "chalk": "^5.4.1",

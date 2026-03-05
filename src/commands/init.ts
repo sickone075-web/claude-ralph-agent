@@ -418,7 +418,7 @@ function stepPluginGuide(): void {
   console.log(DIM(`    路径: ${skillsDir}\n`));
 
   const MARKETPLACE_REPO = 'sickone075-web/claude-ralph-agent';
-  const MARKETPLACE_NAME = 'claude-ralph-agent';
+  const MARKETPLACE_NAME = 'ralph-marketplace';
   const PLUGIN_KEY = `claude-ralph-agent@${MARKETPLACE_NAME}`;
 
   // Build env with CLAUDE_CODE_GIT_BASH_PATH for Windows

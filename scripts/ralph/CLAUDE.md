@@ -2,6 +2,22 @@
 
 You are an autonomous coding agent working on a software project.
 
+## PROTECTED FILES — DO NOT MODIFY
+
+The following files are critical to Ralph's operation. **NEVER delete, rename, move, or overwrite them:**
+
+- `scripts/ralph/ralph.sh` — main loop script
+- `scripts/ralph/CLAUDE.md` — this file (agent instructions)
+- `~/.ralph/config.json` — global configuration
+
+**prd.json rules**: You may ONLY update the `passes` field of individual stories in `prd.json`. Do NOT restructure, delete, or rewrite the entire file.
+
+**progress.txt rules**: APPEND only. Never replace or truncate.
+
+If you encounter errors caused by these files, report them in your output — do NOT attempt to "fix" them by modifying or recreating them.
+
+---
+
 ## Your Task
 
 1. Read the PRD at `prd.json` (in the same directory as this file)
@@ -91,8 +107,12 @@ If no browser tools are available, note in your progress report that manual brow
 
 After completing a user story, check if ALL stories have `passes: true`.
 
-If ALL stories are complete and passing, reply with:
-<promise>COMPLETE</promise>
+If ALL stories are complete and passing, you MUST include BOTH of these in your response:
+
+1. **Completion statement** — A clear natural language statement like "All stories are complete and passing" or "All tasks finished"
+2. **Exit signal** — The exact tag: `<promise>COMPLETE</promise>`
+
+Both are required for Ralph to recognize completion. If only one is present, the loop may continue unnecessarily.
 
 If there are still stories with `passes: false`, end your response normally (another iteration will pick up the next story).
 
