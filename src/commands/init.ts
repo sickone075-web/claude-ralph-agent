@@ -406,82 +406,63 @@ async function stepFirstProject(config: RalphConfig, action: 'overwrite' | 'keep
   return config;
 }
 
-function getPackageRoot(): string {
-  const __filename = fileURLToPath(import.meta.url);
-  const __dirname = dirname(__filename);
-  // dist/commands/init.js → package root (2 levels up)
-  return resolve(__dirname, '../..');
+function isSkillsRegistered(): boolean {
+  try {
+    const settingsPath = resolve(homedir(), '.claude', 'settings.json');
+    if (!existsSync(settingsPath)) return false;
+    const settings = JSON.parse(readFileSync(settingsPath, 'utf-8'));
+    const enabled = settings.enabledPlugins ?? {};
+    return enabled['claude-ralph-agent@ralph-marketplace'] === true
+      || enabled['claude-ralph-agent@npm'] === true;
+  } catch {
+    return false;
+  }
 }
 
-function stepPluginGuide(): void {
-  console.log(chalk.bold('\n  🔌 Claude Code Skills 注册\n'));
+async function stepPluginGuide(): Promise<void> {
+  console.log(chalk.bold('\n  🔌 Claude Code Skills 安装\n'));
 
-  const pkgRoot = getPackageRoot();
-  const skillsDir = resolve(pkgRoot, 'skills');
-
-  if (!existsSync(skillsDir)) {
-    console.log(WARN('  ⚠ Skills 目录未找到，请检查安装是否完整'));
-    console.log(DIM(`    预期路径: ${skillsDir}\n`));
+  // Check if already registered
+  if (isSkillsRegistered()) {
+    console.log(OK('  ✓ Ralph Skills 已安装到 Claude Code\n'));
+    printSkillList();
     return;
   }
 
-  console.log(OK('  ✓ Skills 目录已就绪'));
-  console.log(DIM(`    路径: ${skillsDir}\n`));
+  // Not installed — guide user
+  console.log(WARN('  ⚠ Ralph Skills 尚未安装到 Claude Code\n'));
+  console.log('  Skills 提供了 Ralph 的核心能力，包括 PRD 生成、任务管理、自主循环控制等。');
+  console.log('  需要在 Claude Code 中安装才能使用 /ralph:xxx 命令。\n');
 
-  const MARKETPLACE_REPO = 'sickone075-web/claude-ralph-agent';
-  const MARKETPLACE_NAME = 'ralph-marketplace';
-  const PLUGIN_KEY = `claude-ralph-agent@${MARKETPLACE_NAME}`;
+  console.log(chalk.bold('  请在 Claude Code 对话中依次执行以下两条命令：\n'));
+  console.log(chalk.cyan('    /plugin marketplace add sickone075-web/claude-ralph-agent'));
+  console.log(chalk.cyan('    /plugin install claude-ralph-agent@ralph-marketplace'));
+  console.log('');
 
-  // Build env with CLAUDE_CODE_GIT_BASH_PATH for Windows
-  const env = { ...process.env };
-  const config = readConfig();
-  if (config.gitBashPath) {
-    env.CLAUDE_CODE_GIT_BASH_PATH = config.gitBashPath;
-  }
+  const { confirmed } = await inquirer.prompt<{ confirmed: boolean }>([
+    {
+      type: 'confirm',
+      name: 'confirmed',
+      message: '是否已了解安装方式？（可稍后在 Claude Code 中安装）',
+      default: true,
+    },
+  ]);
 
-  // Check if already registered (marketplace or npm)
-  let installed = false;
-  try {
-    const settingsPath = resolve(homedir(), '.claude', 'settings.json');
-    if (existsSync(settingsPath)) {
-      const settings = JSON.parse(readFileSync(settingsPath, 'utf-8'));
-      const enabled = settings.enabledPlugins ?? {};
-      if (enabled[PLUGIN_KEY] === true || enabled['claude-ralph-agent@npm'] === true) {
-        console.log(OK('  ✓ Skills 已注册到 Claude Code'));
-        installed = true;
-      }
-    }
-  } catch {
-    // continue with install
-  }
-
-  if (!installed) {
-    // Step 1: Add marketplace
-    try {
-      execSync(`claude plugin marketplace add ${MARKETPLACE_REPO}`, { stdio: 'pipe', env });
-      console.log(OK(`  ✓ Marketplace ${MARKETPLACE_NAME} 已添加`));
-    } catch {
-      // Marketplace may already exist, continue
-    }
-
-    // Step 2: Install plugin
-    try {
-      execSync(`claude plugin install ${PLUGIN_KEY}`, { stdio: 'pipe', env });
-      console.log(OK('  ✓ Skills 已自动注册到 Claude Code'));
-      installed = true;
-    } catch {
-      // Fall through to manual instructions
+  if (confirmed) {
+    // Re-check in case user just installed
+    if (isSkillsRegistered()) {
+      console.log(OK('\n  ✓ 检测到 Skills 已安装！'));
+    } else {
+      console.log(DIM('\n  请记得在 Claude Code 中执行安装命令。'));
     }
   }
 
-  if (!installed) {
-    console.log(WARN('  ⚠ 未能自动注册 Skills，请在 Claude Code 中手动执行：'));
-    console.log(DIM(`    /plugin marketplace add ${MARKETPLACE_REPO}`));
-    console.log(DIM(`    /plugin install ${PLUGIN_KEY}`));
-    console.log('');
-  }
+  console.log('');
+  printSkillList();
+}
 
-  console.log('  内置 skill：');
+function printSkillList(): void {
+  console.log('  可用 Skills：');
   console.log(BRAND('    /ralph:prd')    + '    — 生成产品需求文档（含头脑风暴和需求讨论）');
   console.log(BRAND('    /ralph:task')   + '   — 将 PRD 转换为 prd.json 任务格式');
   console.log(BRAND('    /ralph:init')   + '   — 首次初始化项目 AI 上下文（生成 CLAUDE.md）');
@@ -601,7 +582,7 @@ export async function runInit(): Promise<void> {
   config = await stepFirstProject(config, action);
 
   // Step 7: Claude Code plugin guidance
-  stepPluginGuide();
+  await stepPluginGuide();
 
   // Step 8: External skills detection
   stepExternalSkills();
