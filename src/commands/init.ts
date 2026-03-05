@@ -6,6 +6,7 @@ import { dirname, resolve } from 'node:path';
 import chalk from 'chalk';
 import inquirer from 'inquirer';
 import { readConfig, writeConfig, getConfigPath, type RalphConfig } from '../lib/global-config.js';
+import { scaffoldProject } from '../lib/scaffold.js';
 
 const BRAND = chalk.hex('#6366f1');
 const WARN = chalk.yellow;
@@ -391,6 +392,16 @@ async function stepFirstProject(config: RalphConfig, action: 'overwrite' | 'keep
   config.projects.push({ name: trimmedName, path: trimmedPath });
   config.activeProject = trimmedName;
   console.log(OK(`  ✓ 项目 "${trimmedName}" 已添加并设为活跃项目`));
+
+  // Scaffold scripts/ralph/ in the project
+  console.log(DIM('  正在初始化项目 Ralph 文件...'));
+  const { created, skipped } = scaffoldProject(trimmedPath);
+  for (const f of created) {
+    console.log(OK(`  ✓ ${f}`));
+  }
+  for (const f of skipped) {
+    console.log(DIM(`  - ${f}`));
+  }
 
   return config;
 }

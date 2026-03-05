@@ -3,9 +3,11 @@ import { resolve } from 'node:path';
 import chalk from 'chalk';
 import inquirer from 'inquirer';
 import { readConfig, writeConfig } from '../lib/global-config.js';
+import { scaffoldProject } from '../lib/scaffold.js';
 
 const BRAND = chalk.hex('#6366f1');
 const OK = chalk.green;
+const DIM = chalk.dim;
 const ERR = chalk.red;
 
 export async function runAddProject(): Promise<void> {
@@ -54,6 +56,16 @@ export async function runAddProject(): Promise<void> {
   console.log(OK(`\n✅ 项目 "${name.trim()}" 已添加（路径：${resolvedPath}）`));
   if (config.activeProject === name.trim()) {
     console.log(OK(`   已设为活跃项目`));
+  }
+
+  // Scaffold scripts/ralph/ in the project
+  console.log(DIM('  正在初始化项目 Ralph 文件...'));
+  const { created, skipped } = scaffoldProject(resolvedPath);
+  for (const f of created) {
+    console.log(OK(`  ✓ ${f}`));
+  }
+  for (const f of skipped) {
+    console.log(DIM(`  - ${f}`));
   }
   console.log('');
 }
