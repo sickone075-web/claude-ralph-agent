@@ -6,6 +6,7 @@ import { dirname, resolve } from 'node:path';
 import { runInit } from '../commands/init.js';
 import { runDashboard } from '../commands/dashboard.js';
 import { runAddProject } from '../commands/add-project.js';
+import { runSetup } from '../commands/setup.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -48,6 +49,13 @@ program
   .description('添加项目')
   .action(async () => {
     await runAddProject();
+  });
+
+program
+  .command('setup')
+  .description('为所有已注册项目初始化 Ralph 运行环境（scripts/ralph/）')
+  .action(async () => {
+    await runSetup();
   });
 
 
