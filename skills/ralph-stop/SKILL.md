@@ -20,7 +20,7 @@ user-invocable: true
 
 ### 第一步：检查 Ralph 是否在运行
 
-使用 Read 工具读取 `ralph/.ralph-pid` 文件。
+首先读取 `~/.ralph/config.json` 获取 `activeProject` 名称，然后使用 Read 工具读取 `~/.ralph/projects/<activeProject>/.ralph-pid` 文件。
 
 - 如果文件**不存在**：报告"Ralph 当前未在运行。"并**停止**
 - 如果文件存在：提取其中的 PID 编号并继续
@@ -33,7 +33,7 @@ user-invocable: true
 kill -0 <PID> 2>/dev/null && echo "alive" || echo "dead"
 ```
 
-- 如果输出 "dead"：通过 Bash 工具执行 `rm ralph/.ralph-pid` 清理过期 PID 文件，然后报告"Ralph 当前未在运行（已清理过期 PID 文件）。"并**停止**
+- 如果输出 "dead"：通过 Bash 工具执行 `rm ~/.ralph/projects/<activeProject>/.ralph-pid` 清理过期 PID 文件，然后报告"Ralph 当前未在运行（已清理过期 PID 文件）。"并**停止**
 - 如果输出 "alive"：继续
 
 ### 第三步：终止进程
@@ -70,7 +70,7 @@ sleep 1 && (kill -0 <PID> 2>/dev/null && echo "alive" || echo "dead")
 如果 PID 文件仍然存在，将其删除：
 
 ```bash
-rm -f ralph/.ralph-pid
+rm -f ~/.ralph/projects/<activeProject>/.ralph-pid
 ```
 
 ### 第六步：确认

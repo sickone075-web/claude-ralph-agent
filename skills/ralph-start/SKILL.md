@@ -18,14 +18,14 @@ user-invocable: true
 
 1. **配置文件存在** — `~/.ralph/config.json` 可读
 2. **有活跃项目** — `activeProject` 已设置
-3. **PRD 已就绪** — 项目的 `ralph/prd.json` 存在
-4. **ralph.sh 可用** — 项目的 `ralph/ralph.sh` 存在
+3. **PRD 已就绪** — 项目的 `.ralph/prd.json` 存在
+4. **ralph.sh 可用** — `~/.ralph/ralph.sh` 存在
 
 如果条件不满足，给出明确提示：
 - 无配置文件 → 提示运行 `ralph init`
 - 无活跃项目 → 提示在配置中设置活跃项目
 - 无 PRD → 提示运行 `/ralph:prd` 创建需求文档，再运行 `/ralph:task` 转换为 prd.json
-- 无 ralph.sh → 提示检查项目的 `ralph/` 目录
+- 无 ralph.sh → 提示运行 `ralph init` 或 `npm install -g claude-ralph-agent`
 
 ---
 
@@ -46,7 +46,7 @@ cat ~/.ralph/config.json
 
 ```bash
 cd <projectPath>
-bash ralph/ralph.sh [maxIterations]
+bash ~/.ralph/ralph.sh [maxIterations]
 ```
 
 告知用户已启动 Ralph 循环，并显示项目路径和 PID 信息。

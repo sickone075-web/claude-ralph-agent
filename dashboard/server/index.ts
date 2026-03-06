@@ -3,7 +3,7 @@ import { createServer } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { watch, type FSWatcher } from "chokidar";
 import path from "path";
-import { onEvent, getPidFilePath, detectRunningFromPid } from "../src/lib/ralph-process";
+import { onEvent, detectRunningFromPid } from "../src/lib/ralph-process";
 import { getActiveProjectPaths } from "../src/lib/config";
 import { initLogCache, addLogLine, getCurrentStoryId, setCurrentStoryId, detectStoryIdFromOutput, clearLogCache } from "./log-cache";
 
@@ -129,7 +129,7 @@ function setupFileWatcher() {
   fileEventMap[path.resolve(projectPaths.progressPath)] = { eventType: "progress:updated" };
 
   // Also watch the PID file for external start/stop detection
-  const pidPath = getPidFilePath();
+  const pidPath = projectPaths.pidPath;
   if (pidPath) {
     filesToWatch.push(pidPath);
   }

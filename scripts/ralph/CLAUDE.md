@@ -6,8 +6,8 @@ You are an autonomous coding agent working on a software project.
 
 The following files are critical to Ralph's operation. **NEVER delete, rename, move, or overwrite them:**
 
-- `ralph/ralph.sh` — main loop script
-- `ralph/CLAUDE.md` — this file (agent instructions)
+- `~/.ralph/ralph.sh` — main loop script (global)
+- `~/.ralph/CLAUDE.md` — this file (agent instructions, global)
 - `~/.ralph/config.json` — global configuration
 
 **prd.json rules**: You may ONLY update the `passes` field of individual stories in `prd.json`. Do NOT restructure, delete, or rewrite the entire file.

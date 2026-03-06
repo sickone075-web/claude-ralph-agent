@@ -50,9 +50,9 @@ Agent({
 ### 步骤 2：检测 Ralph 环境就绪状态
 
 在调用子智能体前，**协调者自行检查**以下文件/目录是否存在（使用 Glob 工具）：
-- `ralph/` 目录
-- `ralph/ralph.sh`
-- `ralph/prd.json`
+- `~/.ralph/` 目录（全局）
+- `~/.ralph/ralph.sh`（全局脚本）
+- `.ralph/prd.json`（项目级）
 - `~/.ralph/config.json`
 
 记录缺失项，在步骤 4 的摘要中提示用户。
@@ -146,9 +146,9 @@ Agent({
 ## 初始化结果摘要
 
 ### Ralph 环境就绪状态
-- `ralph/` 目录：[存在/缺失]
-- `ralph/ralph.sh`：[存在/缺失]
-- `ralph/prd.json`：[存在/缺失]
+- `~/.ralph/` 目录：[存在/缺失]
+- `~/.ralph/ralph.sh`：[存在/缺失]
+- `.ralph/prd.json`：[存在/缺失]
 - `~/.ralph/config.json`：[存在/缺失]
 
 > 如有缺失项，提示用户运行相应的初始化命令

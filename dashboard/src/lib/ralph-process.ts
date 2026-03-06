@@ -1,6 +1,5 @@
 import { spawn, ChildProcess, execSync } from "child_process";
 import fs from "fs";
-import path from "path";
 import { getRalphScriptPath, getActiveProjectPaths } from "./config";
 
 export type RalphStatus = "idle" | "running" | "completed" | "error";
@@ -28,7 +27,7 @@ export function getPidFilePath(): string | null {
   if (!projectPaths) {
     return null;
   }
-  return path.join(projectPaths.projectPath, "ralph", ".ralph-pid");
+  return projectPaths.pidPath;
 }
 
 export function detectRunningFromPid(): { running: boolean; pid: number | null } {
@@ -105,7 +104,7 @@ export function startRalph(params: {
 
   const scriptPath = getRalphScriptPath();
   const projectPaths = getActiveProjectPaths();
-  const cwd = projectPaths?.projectPath ?? scriptPath.substring(0, scriptPath.lastIndexOf("/"));
+  const cwd = projectPaths?.projectPath ?? process.cwd();
 
   const args = ["--tool", params.tool];
   if (params.timeout && params.timeout > 0) {
@@ -119,15 +118,23 @@ export function startRalph(params: {
   const isWindows = process.platform === "win32";
   let child: ChildProcess;
 
+  // Set RALPH_PROJECT_DIR so ralph.sh knows the project root
+  const env = {
+    ...process.env,
+    RALPH_PROJECT_DIR: cwd,
+  };
+
   if (isWindows) {
     child = spawn("bash", [scriptPath, ...args], {
       stdio: ["pipe", "pipe", "pipe"],
       cwd,
+      env,
     });
   } else {
     child = spawn(scriptPath, args, {
       stdio: ["pipe", "pipe", "pipe"],
       cwd,
+      env,
     });
   }
 

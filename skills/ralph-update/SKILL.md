@@ -50,7 +50,7 @@ Agent({
 
 #### 2b. 提取 Codebase Patterns
 
-读取 `ralph/progress.txt`，提取 `## Codebase Patterns` 章节内容。如果不存在或章节为空，记录为"无新 Patterns"。
+读取 `.ralph/progress.txt`，提取 `## Codebase Patterns` 章节内容。如果不存在或章节为空，记录为"无新 Patterns"。
 
 #### 2c. 对比现有 CLAUDE.md
 
@@ -111,7 +111,7 @@ $STRUCTURE_CHANGES
 ### Codebase Patterns 合并
 - 新增 Patterns：N 条
 - 已有（跳过）：N 条
-- 来源：ralph/progress.txt
+- 来源：.ralph/progress.txt
 
 ### 结构变化
 - 新增模块：<列表或"无">

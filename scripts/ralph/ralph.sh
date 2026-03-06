@@ -122,19 +122,54 @@ if [[ "$TOOL" != "amp" && "$TOOL" != "claude" ]]; then
 fi
 
 # =============================================================
-#  Path Definitions
+#  Path Definitions (Three-Layer Directory Structure)
 # =============================================================
+# RALPH_HOME   = ~/.ralph              全局脚本、配置
+# PROJECT_DIR  = 项目根目录（auto detect .git）
+# RALPH_DIR    = $PROJECT_DIR/.ralph    项目级 PRD、进度、归档
+# STATE_DIR    = ~/.ralph/projects/<name>  运行时状态（PID、断路器等）
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PRD_FILE="$SCRIPT_DIR/prd.json"
-PROGRESS_FILE="$SCRIPT_DIR/progress.txt"
-ARCHIVE_DIR="$SCRIPT_DIR/archive"
-LAST_BRANCH_FILE="$SCRIPT_DIR/.last-branch"
-LOG_FILE="$SCRIPT_DIR/ralph.log"
-PID_FILE="$SCRIPT_DIR/.ralph-pid"
-CB_STATE_FILE="$SCRIPT_DIR/.circuit-breaker"
-SESSION_FILE="$SCRIPT_DIR/.ralph-session"
-LAST_GIT_HASH_FILE="$SCRIPT_DIR/.last-git-hash"
+RALPH_HOME="$HOME/.ralph"
+
+# 自动检测项目根目录（从 CWD 向上查找 .git）
+find_project_root() {
+  local dir="${RALPH_PROJECT_DIR:-$(pwd)}"
+  while [[ "$dir" != "/" ]]; do
+    if [[ -d "$dir/.git" ]]; then
+      echo "$dir"
+      return
+    fi
+    dir="$(dirname "$dir")"
+  done
+  # fallback: 当前目录
+  echo "${RALPH_PROJECT_DIR:-$(pwd)}"
+}
+PROJECT_DIR="$(find_project_root)"
+
+# 项目名称：取目录名（可通过 RALPH_PROJECT_NAME 覆盖）
+PROJECT_NAME="${RALPH_PROJECT_NAME:-$(basename "$PROJECT_DIR")}"
+
+# 项目级目录（PRD、进度、归档）
+RALPH_DIR="$PROJECT_DIR/.ralph"
+mkdir -p "$RALPH_DIR"
+
+# 运行时状态目录（PID、断路器、会话、日志）
+STATE_DIR="$RALPH_HOME/projects/$PROJECT_NAME"
+mkdir -p "$STATE_DIR"
+
+# 项目级文件
+PRD_FILE="$RALPH_DIR/prd.json"
+PROGRESS_FILE="$RALPH_DIR/progress.txt"
+ARCHIVE_DIR="$RALPH_DIR/archive"
+LAST_BRANCH_FILE="$RALPH_DIR/.last-branch"
+
+# 运行时状态文件
+LOG_FILE="$STATE_DIR/ralph.log"
+PID_FILE="$STATE_DIR/.ralph-pid"
+CB_STATE_FILE="$STATE_DIR/.circuit-breaker"
+SESSION_FILE="$STATE_DIR/.ralph-session"
+LAST_GIT_HASH_FILE="$STATE_DIR/.last-git-hash"
 
 # =============================================================
 #  Process Lock
@@ -238,7 +273,7 @@ FEISHU_EOF
 run_with_timeout() {
   local cmd="$1"
   local timeout_seconds=$((TIMEOUT_MINUTES * 60))
-  local output_file="$SCRIPT_DIR/.ralph-output-tmp"
+  local output_file="$STATE_DIR/.ralph-output-tmp"
 
   eval "$cmd" > "$output_file" 2>&1 &
   local cmd_pid=$!
@@ -375,8 +410,8 @@ validate_integrity() {
 
   if [[ ${#PROTECTED_FILES[@]} -eq 0 ]]; then
     PROTECTED_FILES=(
-      "$SCRIPT_DIR/CLAUDE.md"
-      "$SCRIPT_DIR/prd.json"
+      "$RALPH_HOME/CLAUDE.md"
+      "$RALPH_DIR/prd.json"
     )
     if [[ -f "$RALPH_CONFIG_FILE" ]]; then
       PROTECTED_FILES+=("$RALPH_CONFIG_FILE")
@@ -592,7 +627,7 @@ cb_check_stagnation() {
 
   # 获取当前项目根目录的 git hash
   local project_dir
-  project_dir="$(cd "$SCRIPT_DIR/../.." && pwd)"
+  project_dir="$PROJECT_DIR"
   local current_hash
   current_hash="$(git -C "$project_dir" rev-parse HEAD 2>/dev/null || echo "")"
 
@@ -830,7 +865,7 @@ if [ -f "$PRD_FILE" ] && [ -f "$LAST_BRANCH_FILE" ]; then
   if [ -n "$CURRENT_BRANCH" ] && [ -n "$LAST_BRANCH" ] && [ "$CURRENT_BRANCH" != "$LAST_BRANCH" ]; then
     DATE=$(date +%Y-%m-%d)
     FOLDER_NAME=$(echo "$LAST_BRANCH" | sed 's|^ralph/||')
-    ARCHIVE_FOLDER="$ARCHIVE_DIR/$DATE-$FOLDER_NAME"
+    ARCHIVE_FOLDER="$ARCHIVE_DIR/${DATE}_${FOLDER_NAME}"
 
     echo "Archiving previous run: $LAST_BRANCH"
     mkdir -p "$ARCHIVE_FOLDER"
@@ -927,10 +962,10 @@ while [[ $i -le $MAX_ITERATIONS ]]; do
   snapshot_checksums
 
   # 构建 AI 命令
-  CLAUDE_TEMPLATE="$SCRIPT_DIR/CLAUDE.md"
+  CLAUDE_TEMPLATE="$RALPH_HOME/CLAUDE.md"
 
   if [[ "$TOOL" == "amp" ]]; then
-    run_with_timeout "cat \"$SCRIPT_DIR/prompt.md\" | amp --dangerously-allow-all"
+    run_with_timeout "cat \"$RALPH_HOME/prompt.md\" | amp --dangerously-allow-all"
   else
     local claude_cmd
     claude_cmd="$(build_claude_cmd "$CLAUDE_TEMPLATE")"
@@ -940,8 +975,8 @@ while [[ $i -le $MAX_ITERATIONS ]]; do
 
   # 读取输出
   OUTPUT=""
-  if [[ -f "$SCRIPT_DIR/.ralph-output-tmp" ]]; then
-    OUTPUT="$(cat "$SCRIPT_DIR/.ralph-output-tmp")"
+  if [[ -f "$STATE_DIR/.ralph-output-tmp" ]]; then
+    OUTPUT="$(cat "$STATE_DIR/.ralph-output-tmp")"
   fi
   echo "$OUTPUT"
 
@@ -1058,6 +1093,19 @@ while [[ $i -le $MAX_ITERATIONS ]]; do
     echo "Ralph completed all tasks!"
     echo "Completed at iteration $i of $MAX_ITERATIONS"
     log "INFO" "所有任务完成！在迭代 $i 检测到双重退出条件 (指标: $COMPLETION_INDICATORS)"
+
+    # 自动归档完成的任务
+    if [ -f "$PRD_FILE" ]; then
+      COMPLETE_BRANCH=$(jq -r '.branchName // empty' "$PRD_FILE" 2>/dev/null || echo "completed")
+      COMPLETE_FOLDER_NAME=$(echo "$COMPLETE_BRANCH" | sed 's|^ralph/||')
+      COMPLETE_DATE=$(date +%Y-%m-%d)
+      COMPLETE_ARCHIVE="$ARCHIVE_DIR/${COMPLETE_DATE}_${COMPLETE_FOLDER_NAME}"
+      mkdir -p "$COMPLETE_ARCHIVE"
+      cp "$PRD_FILE" "$COMPLETE_ARCHIVE/"
+      [ -f "$PROGRESS_FILE" ] && cp "$PROGRESS_FILE" "$COMPLETE_ARCHIVE/"
+      log "INFO" "已归档到: $COMPLETE_ARCHIVE"
+    fi
+
     send_feishu "success" "所有任务已完成！在迭代 $i / $MAX_ITERATIONS 时双重门控确认完成" "$i" "$MAX_ITERATIONS"
     exit 0
   fi

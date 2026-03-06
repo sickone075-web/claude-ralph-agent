@@ -104,8 +104,6 @@ setup_test_env() {
 source_functions() {
   local test_dir="$1"
 
-  echo "99999" > "$test_dir/.ralph-pid"
-
   local stripped="$test_dir/_ralph_testable.sh"
 
   # Step 1: cut everything from main execution block onward
@@ -125,7 +123,7 @@ source_functions() {
     { print }
   ' "$stripped" > "$stripped.tmp" && mv "$stripped.tmp" "$stripped"
 
-  # Step 3: remove set -e and RALPH_SOURCED guard block
+  # Step 3: remove set -e, RALPH_SOURCED guard, and Process Lock section
   awk '
     /^set -e$/ && !seen { seen=1; next }
     /^# Allow sourcing/ { sg=1; next }
@@ -134,14 +132,25 @@ source_functions() {
     { print }
   ' "$stripped" > "$stripped.tmp" && mv "$stripped.tmp" "$stripped"
 
+  # Step 3b: remove Process Lock section (cleanup/trap/pid check/echo $$)
+  sed -i '/^cleanup()/,/^echo \$\$ /d' "$stripped"
+  sed -i '/^trap cleanup/d' "$stripped"
+
   # Step 4: source the cleaned file
   set +e
+  RALPH_PROJECT_DIR="$test_dir"
   source "$stripped"
 
-  # Set test-specific variables
+  # Set test-specific variables (override paths resolved during source)
   SCRIPT_DIR="$test_dir"
+  RALPH_HOME="$test_dir"
+  PROJECT_DIR="$test_dir"
+  PROJECT_NAME="test"
+  RALPH_DIR="$test_dir"
+  STATE_DIR="$test_dir"
   PRD_FILE="$test_dir/prd.json"
   PROGRESS_FILE="$test_dir/progress.txt"
+  ARCHIVE_DIR="$test_dir/archive"
   LOG_FILE="$test_dir/ralph.log"
   CB_STATE_FILE="$test_dir/.circuit-breaker"
   SESSION_FILE="$test_dir/.ralph-session"

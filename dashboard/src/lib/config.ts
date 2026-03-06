@@ -29,6 +29,10 @@ export interface ActiveProjectPaths {
   progressPath: string;
   projectPath: string;
   archivePath: string;
+  ralphDir: string;      // $PROJECT/.ralph
+  stateDir: string;      // ~/.ralph/projects/<name>
+  pidPath: string;
+  logPath: string;
 }
 
 const CONFIG_DIR = path.join(os.homedir(), ".ralph");
@@ -94,16 +98,10 @@ export function getRalphScriptPath(): string {
   if (process.env.RALPH_SCRIPTS_DIR) {
     return path.join(process.env.RALPH_SCRIPTS_DIR, "ralph.sh");
   }
-  // Prefer user project's ralph/ralph.sh (scaffolded by ralph init)
-  const config = getConfig();
-  if (config.activeProject) {
-    const project = config.projects.find((p) => p.name === config.activeProject);
-    if (project) {
-      const fromProject = path.join(project.path, "ralph", "ralph.sh");
-      if (fs.existsSync(fromProject)) {
-        return fromProject;
-      }
-    }
+  // Primary: global ~/.ralph/ralph.sh
+  const globalScript = path.join(CONFIG_DIR, "ralph.sh");
+  if (fs.existsSync(globalScript)) {
+    return globalScript;
   }
   // Fallback: package source (dev mode)
   const fromDashboard = path.resolve(process.cwd(), "..", "scripts", "ralph", "ralph.sh");
@@ -125,12 +123,20 @@ export function getActiveProjectPaths(): ActiveProjectPaths | null {
     return null;
   }
 
-  const scriptsRalphDir = path.join(project.path, "ralph");
+  // Project-level: $PROJECT/.ralph/
+  const ralphDir = path.join(project.path, ".ralph");
+
+  // Runtime state: ~/.ralph/projects/<name>/
+  const stateDir = path.join(CONFIG_DIR, "projects", config.activeProject);
 
   return {
-    prdPath: path.join(scriptsRalphDir, "prd.json"),
-    progressPath: path.join(scriptsRalphDir, "progress.txt"),
+    prdPath: path.join(ralphDir, "prd.json"),
+    progressPath: path.join(ralphDir, "progress.txt"),
     projectPath: project.path,
-    archivePath: path.join(scriptsRalphDir, "archive"),
+    archivePath: path.join(ralphDir, "archive"),
+    ralphDir,
+    stateDir,
+    pidPath: path.join(stateDir, ".ralph-pid"),
+    logPath: path.join(stateDir, "ralph.log"),
   };
 }
